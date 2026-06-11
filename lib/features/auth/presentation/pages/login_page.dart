@@ -41,6 +41,8 @@ class _LoginPageState extends State<LoginPage> {
                 if (state is AuthSuccess) {
                   if (state.user.isAdmin) {
                     context.go('/admin/dashboard');
+                  } else if (state.user.role == 'delivery') {
+                    context.go('/delivery/dashboard');
                   } else {
                     context.go('/home');
                   }

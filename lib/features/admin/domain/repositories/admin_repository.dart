@@ -3,11 +3,13 @@ import '../../../../core/errors/failures.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../home/domain/entities/restaurant_entity.dart';
 import '../../../home/domain/entities/meal_entity.dart';
+import '../../../home/domain/entities/category_entity.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 
 abstract class AdminRepository {
   Future<Either<Failure, List<OrderEntity>>> getAllOrders();
   Future<Either<Failure, OrderEntity>> updateOrderStatus(int orderId, String status);
+  Future<Either<Failure, OrderEntity>> assignDriver(int orderId, int driverId);
 
   Future<Either<Failure, List<RestaurantEntity>>> getAllRestaurants();
   Future<Either<Failure, RestaurantEntity>> createRestaurant(Map<String, dynamic> data);
@@ -19,7 +21,13 @@ abstract class AdminRepository {
   Future<Either<Failure, MealEntity>> updateMeal(int id, Map<String, dynamic> data);
   Future<Either<Failure, Unit>> deleteMeal(int id);
 
+  Future<Either<Failure, List<CategoryEntity>>> getAllCategories();
+  Future<Either<Failure, CategoryEntity>> createCategory(Map<String, dynamic> data);
+  Future<Either<Failure, CategoryEntity>> updateCategory(String id, Map<String, dynamic> data);
+  Future<Either<Failure, Unit>> deleteCategory(String id);
+
   Future<Either<Failure, List<UserEntity>>> getAllUsers();
+  Future<Either<Failure, UserEntity>> createUser(Map<String, dynamic> data);
   Future<Either<Failure, UserEntity>> updateUser(int id, Map<String, dynamic> data);
   Future<Either<Failure, Unit>> deleteUser(int id);
 

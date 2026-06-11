@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../di/injection_container.dart';
 import '../bloc/cart_bloc.dart';
 import '../bloc/cart_event.dart';
 import '../bloc/cart_state.dart';
@@ -17,68 +16,63 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> {
-  late CartBloc _bloc;
-
   @override
   void initState() {
     super.initState();
-    _bloc = sl<CartBloc>()..add(FetchCart());
+    context.read<CartBloc>().add(FetchCart());
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => _bloc,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          title: const Text('My Cart', style: TextStyle(color: AppColors.onBackground, fontWeight: FontWeight.bold)),
-          actions: [
-            TextButton(
-              onPressed: () => _bloc.add(ClearCart()),
-              child: const Text('Clear', style: TextStyle(color: AppColors.error)),
-            ),
-          ],
-        ),
-        body: BlocBuilder<CartBloc, CartState>(
-          builder: (context, state) {
-            if (state is CartLoading) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.primary));
-            } else if (state is CartLoaded) {
-              if (state.cart.items.isEmpty) {
-                return _buildEmptyCart();
-              }
-              return Column(
-                children: [
-                  Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: state.cart.items.length,
-                      itemBuilder: (context, index) {
-                        return CartItemTile(
-                          item: state.cart.items[index],
-                          onQuantityChanged: (q) => _bloc.add(
-                            UpdateItemQuantity(lineId: state.cart.items[index].id, quantity: q),
-                          ),
-                          onRemoved: () => _bloc.add(RemoveItemFromCart(state.cart.items[index].id)),
-                        );
-                      },
-                    ),
-                  ),
-                  CartSummaryCard(
-                    cart: state.cart,
-                    onCheckout: () => context.push('/checkout'),
-                  ),
-                ],
-              );
-            } else if (state is CartError) {
-              return Center(child: Text(state.message));
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text('My Cart', style: TextStyle(color: AppColors.onBackground, fontWeight: FontWeight.bold)),
+        actions: [
+          TextButton(
+            onPressed: () => context.read<CartBloc>().add(ClearCart()),
+            child: const Text('Clear', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+      body: BlocBuilder<CartBloc, CartState>(
+        builder: (context, state) {
+          if (state is CartLoading) {
+            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+          } else if (state is CartLoaded) {
+            if (state.cart.items.isEmpty) {
+              return _buildEmptyCart();
             }
-            return const SizedBox.shrink();
-          },
-        ),
+            return Column(
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: state.cart.items.length,
+                    itemBuilder: (context, index) {
+                      return CartItemTile(
+                        item: state.cart.items[index],
+                        onQuantityChanged: (q) => context.read<CartBloc>().add(
+                          UpdateItemQuantity(lineId: state.cart.items[index].id, quantity: q),
+                        ),
+                        onRemoved: () => context.read<CartBloc>().add(RemoveItemFromCart(state.cart.items[index].id)),
+                      );
+                    },
+                  ),
+                ),
+                CartSummaryCard(
+                  cart: state.cart,
+                  onCheckout: () => context.push('/checkout'),
+                ),
+              ],
+            );
+          } else if (state is CartError) {
+            return Center(child: Text(state.message));
+          }
+          return const SizedBox.shrink();
+        },
       ),
     );
   }

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/events/favorite_events.dart';
 import '../../domain/entities/banner_entity.dart';
 import '../../domain/entities/category_entity.dart';
 import '../../domain/entities/meal_entity.dart';
@@ -17,6 +19,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final GetRestaurantsUseCase getRestaurantsUseCase;
   final GetPopularMealsUseCase getPopularMealsUseCase;
   final ToggleFavoriteRestaurantUseCase toggleFavoriteUseCase;
+  final FavoriteEventBus favoriteEventBus;
+  StreamSubscription<FavoriteEvent>? _favoriteSubscription;
 
   int _restaurantPage = 1;
   int _mealPage = 1;
@@ -36,6 +40,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     required this.getRestaurantsUseCase,
     required this.getPopularMealsUseCase,
     required this.toggleFavoriteUseCase,
+    required this.favoriteEventBus,
   }) : super(HomeInitial()) {
     on<FetchHomeData>(_onFetchHomeData);
     on<RefreshHomeData>(_onRefreshHomeData);
@@ -44,6 +49,29 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<FilterByCategory>(_onFilterByCategory);
     on<SearchRequested>(_onSearchRequested);
     on<ToggleFavoriteRestaurant>(_onToggleFavoriteRestaurant);
+    on<UpdateFavoriteStatus>(_onUpdateFavoriteStatus);
+
+    _favoriteSubscription = favoriteEventBus.stream.listen((event) {
+      add(UpdateFavoriteStatus(event.restaurantId, event.isFavorite));
+    });
+  }
+
+  void _onUpdateFavoriteStatus(UpdateFavoriteStatus event, Emitter<HomeState> emit) {
+    if (state is HomeLoaded) {
+      _allRestaurants = _allRestaurants.map((restaurant) {
+        if (restaurant.id == event.restaurantId) {
+          return restaurant.copyWith(isFavorite: event.isFavorite);
+        }
+        return restaurant;
+      }).toList();
+      _emitFilteredState(emit);
+    }
+  }
+
+  @override
+  Future<void> close() {
+    _favoriteSubscription?.cancel();
+    return super.close();
   }
 
   Future<void> _onFetchHomeData(FetchHomeData event, Emitter<HomeState> emit) async {
@@ -332,14 +360,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           _emitFilteredState(emit);
         },
         (isFavorite) {
-          // Sync with exact backend response value just in case
-          _allRestaurants = _allRestaurants.map((restaurant) {
-            if (restaurant.id == event.restaurantId) {
-              return restaurant.copyWith(isFavorite: isFavorite);
-            }
-            return restaurant;
-          }).toList();
-          _emitFilteredState(emit);
+          favoriteEventBus.fire(FavoriteEvent(restaurantId: event.restaurantId, isFavorite: isFavorite));
         },
       );
     }

@@ -28,6 +28,10 @@ class User extends Authenticatable
         'email',
         'password',
         'is_admin',
+        'role',
+        'is_online',
+        'latitude',
+        'longitude',
     ];
 
     /**
@@ -51,7 +55,20 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'is_online' => 'boolean',
+            'latitude' => 'double',
+            'longitude' => 'double',
         ];
+    }
+
+    public function isDelivery(): bool
+    {
+        return $this->role === 'delivery';
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->is_admin || $this->role === 'admin';
     }
 
     public function cart(): HasOne

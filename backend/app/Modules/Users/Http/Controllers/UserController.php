@@ -4,6 +4,7 @@ namespace App\Modules\Users\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Modules\Users\Http\Requests\StoreUserRequest;
 use App\Modules\Users\Http\Requests\UpdateUserRequest;
 use App\Modules\Users\Http\Resources\UserResource;
 use App\Modules\Users\Services\UserService;
@@ -44,6 +45,15 @@ class UserController extends Controller
         return ApiResponse::success($resource, __('User updated.'));
     }
 
+    public function store(StoreUserRequest $request): JsonResponse
+    {
+        $this->authorize('create', User::class);
+
+        $resource = $this->userService->create($request->validated());
+
+        return ApiResponse::success($resource, __('User created.'), 201);
+    }
+
     public function destroy(User $user): JsonResponse
     {
         $this->authorize('delete', $user);
@@ -51,5 +61,23 @@ class UserController extends Controller
         $this->userService->delete($user, request()->user());
 
         return ApiResponse::success([], __('User deleted.'));
+    }
+
+    public function toggleAvailability(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if ($user->role !== 'delivery') {
+            return ApiResponse::error(__('Unauthorized.'), [], 403);
+        }
+
+        $request->validate([
+            'is_online' => 'required|boolean',
+        ]);
+
+        $user->update([
+            'is_online' => $request->is_online,
+        ]);
+
+        return ApiResponse::success(new UserResource($user), __('Availability updated.'));
     }
 }

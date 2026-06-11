@@ -18,6 +18,10 @@ class UserResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'is_admin' => (bool) $this->is_admin,
+            'role' => $this->role ?? 'customer',
+            'is_online' => (bool) $this->is_online,
+            'latitude' => $this->latitude ? (double) $this->latitude : null,
+            'longitude' => $this->longitude ? (double) $this->longitude : null,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

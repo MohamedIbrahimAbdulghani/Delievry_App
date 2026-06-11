@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../home/domain/entities/restaurant_entity.dart';
 import '../../../home/domain/entities/meal_entity.dart';
+import '../../../home/domain/entities/category_entity.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 
 abstract class AdminState extends Equatable {
@@ -19,6 +20,7 @@ class AdminLoaded extends AdminState {
   final List<OrderEntity> orders;
   final List<RestaurantEntity> restaurants;
   final List<MealEntity> meals;
+  final List<CategoryEntity> categories;
   final List<UserEntity> users;
   final List<Map<String, dynamic>> drivers;
   final Map<String, dynamic> settings;
@@ -27,6 +29,7 @@ class AdminLoaded extends AdminState {
   final int totalOrders;
   final int totalRestaurants;
   final int totalMeals;
+  final int totalCategories;
   final int totalUsers;
   final double totalRevenue;
   final List<OrderEntity> recentOrders;
@@ -39,12 +42,14 @@ class AdminLoaded extends AdminState {
     required this.orders,
     required this.restaurants,
     required this.meals,
+    required this.categories,
     required this.users,
     required this.drivers,
     required this.settings,
     required this.totalOrders,
     required this.totalRestaurants,
     required this.totalMeals,
+    required this.totalCategories,
     required this.totalUsers,
     required this.totalRevenue,
     required this.recentOrders,
@@ -58,12 +63,14 @@ class AdminLoaded extends AdminState {
     List<OrderEntity>? orders,
     List<RestaurantEntity>? restaurants,
     List<MealEntity>? meals,
+    List<CategoryEntity>? categories,
     List<UserEntity>? users,
     List<Map<String, dynamic>>? drivers,
     Map<String, dynamic>? settings,
     int? totalOrders,
     int? totalRestaurants,
     int? totalMeals,
+    int? totalCategories,
     int? totalUsers,
     double? totalRevenue,
     List<OrderEntity>? recentOrders,
@@ -76,12 +83,14 @@ class AdminLoaded extends AdminState {
       orders: orders ?? this.orders,
       restaurants: restaurants ?? this.restaurants,
       meals: meals ?? this.meals,
+      categories: categories ?? this.categories,
       users: users ?? this.users,
       drivers: drivers ?? this.drivers,
       settings: settings ?? this.settings,
       totalOrders: totalOrders ?? this.totalOrders,
       totalRestaurants: totalRestaurants ?? this.totalRestaurants,
       totalMeals: totalMeals ?? this.totalMeals,
+      totalCategories: totalCategories ?? this.totalCategories,
       totalUsers: totalUsers ?? this.totalUsers,
       totalRevenue: totalRevenue ?? this.totalRevenue,
       recentOrders: recentOrders ?? this.recentOrders,
@@ -97,12 +106,14 @@ class AdminLoaded extends AdminState {
         orders,
         restaurants,
         meals,
+        categories,
         users,
         drivers,
         settings,
         totalOrders,
         totalRestaurants,
         totalMeals,
+        totalCategories,
         totalUsers,
         totalRevenue,
         recentOrders,

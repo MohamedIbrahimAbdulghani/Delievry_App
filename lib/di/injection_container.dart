@@ -4,6 +4,7 @@ import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/auth/session_manager.dart';
+import '../core/events/favorite_events.dart';
 import '../core/network/dio_client.dart';
 import '../features/admin/data/datasources/admin_remote_data_source.dart';
 import '../features/admin/data/repositories/admin_repository_impl.dart';
@@ -60,6 +61,16 @@ import '../features/restaurant_details/domain/usecases/get_restaurant_details_us
 import '../features/restaurant_details/domain/usecases/toggle_favorite_usecase.dart';
 import '../features/restaurant_details/presentation/bloc/restaurant_detail_bloc.dart';
 import '../features/splash/presentation/bloc/splash_bloc.dart';
+import '../features/delivery/data/datasources/delivery_remote_data_source.dart';
+import '../features/delivery/data/repositories/delivery_repository_impl.dart';
+import '../features/delivery/domain/repositories/delivery_repository.dart';
+import '../features/delivery/domain/usecases/get_assigned_orders_usecase.dart';
+import '../features/delivery/domain/usecases/update_delivery_status_usecase.dart';
+import '../features/delivery/domain/usecases/update_driver_location_usecase.dart';
+import '../features/delivery/domain/usecases/toggle_availability_usecase.dart';
+import '../features/delivery/domain/usecases/get_driver_earnings_usecase.dart';
+import '../features/delivery/domain/usecases/get_delivery_history_usecase.dart';
+import '../features/delivery/presentation/bloc/delivery_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -69,6 +80,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => sharedPreferences);
   sl.registerLazySingleton(() => const FlutterSecureStorage());
   sl.registerLazySingleton(() => SessionManager(secureStorage: sl()));
+  sl.registerLazySingleton(() => FavoriteEventBus());
   sl.registerLazySingleton(() => Dio());
   sl.registerLazySingleton(() => DioClient(dio: sl(), secureStorage: sl()));
 
@@ -109,6 +121,7 @@ Future<void> init() async {
         getRestaurantsUseCase: sl(),
         getPopularMealsUseCase: sl(),
         toggleFavoriteUseCase: sl(),
+        favoriteEventBus: sl(),
       ));
 
   // Restaurant Details
@@ -119,6 +132,7 @@ Future<void> init() async {
   sl.registerFactory(() => RestaurantDetailBloc(
         getRestaurantDetailsUseCase: sl(),
         toggleFavoriteUseCase: sl(),
+        favoriteEventBus: sl(),
       ));
 
   // Product Details
@@ -135,7 +149,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => UpdateCartItemUseCase(sl()));
   sl.registerLazySingleton(() => RemoveFromCartUseCase(sl()));
   sl.registerLazySingleton(() => ClearCartUseCase(sl()));
-  sl.registerFactory(() => CartBloc(
+  sl.registerLazySingleton(() => CartBloc(
         getCartUseCase: sl(),
         addToCartUseCase: sl(),
         updateCartItemUseCase: sl(),
@@ -165,9 +179,10 @@ Future<void> init() async {
   sl.registerLazySingleton<FavoritesRepository>(() => FavoritesRepositoryImpl(dioClient: sl()));
   sl.registerLazySingleton(() => GetFavoritesUseCase(sl()));
   sl.registerLazySingleton(() => ToggleFavoriteUseCase(sl()));
-  sl.registerFactory(() => FavoritesBloc(
+  sl.registerLazySingleton(() => FavoritesBloc(
         getFavoritesUseCase: sl(),
         toggleFavoriteUseCase: sl(),
+        favoriteEventBus: sl(),
       ));
 
   // Profile
@@ -189,4 +204,23 @@ Future<void> init() async {
   sl.registerLazySingleton<AdminRemoteDataSource>(() => AdminRemoteDataSourceImpl(dioClient: sl()));
   sl.registerLazySingleton<AdminRepository>(() => AdminRepositoryImpl(remoteDataSource: sl()));
   sl.registerFactory(() => AdminBloc(repository: sl()));
+
+  // Delivery
+  sl.registerLazySingleton<DeliveryRemoteDataSource>(() => DeliveryRemoteDataSourceImpl(dioClient: sl()));
+  sl.registerLazySingleton<DeliveryRepository>(() => DeliveryRepositoryImpl(remoteDataSource: sl()));
+  sl.registerLazySingleton(() => GetAssignedOrdersUseCase(sl()));
+  sl.registerLazySingleton(() => UpdateDeliveryStatusUseCase(sl()));
+  sl.registerLazySingleton(() => UpdateDriverLocationUseCase(sl()));
+  sl.registerLazySingleton(() => ToggleAvailabilityUseCase(sl()));
+  sl.registerLazySingleton(() => GetDriverEarningsUseCase(sl()));
+  sl.registerLazySingleton(() => GetDeliveryHistoryUseCase(sl()));
+  sl.registerFactory(() => DeliveryBloc(
+        getAssignedOrdersUseCase: sl(),
+        updateDeliveryStatusUseCase: sl(),
+        updateDriverLocationUseCase: sl(),
+        toggleAvailabilityUseCase: sl(),
+        getDriverEarningsUseCase: sl(),
+        getDeliveryHistoryUseCase: sl(),
+        sessionManager: sl(),
+      ));
 }

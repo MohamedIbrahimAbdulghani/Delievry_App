@@ -14,6 +14,8 @@ class SessionManager {
 
   bool get isAdmin => _currentUser?.isAdmin ?? false;
 
+  bool get isDelivery => _currentUser?.role == 'delivery';
+
   void setCurrentUser(UserEntity? user) {
     _currentUser = user;
   }
@@ -27,6 +29,7 @@ class SessionManager {
         name: profile.name,
         email: profile.email,
         isAdmin: profile.isAdmin,
+        role: profile.role,
       );
     }
   }

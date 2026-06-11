@@ -6,6 +6,8 @@ import '../../../../di/injection_container.dart';
 import '../bloc/checkout_bloc.dart';
 import '../bloc/checkout_event.dart';
 import '../bloc/checkout_state.dart';
+import '../../../cart/presentation/bloc/cart_bloc.dart';
+import '../../../cart/presentation/bloc/cart_event.dart';
 
 class CheckoutPage extends StatefulWidget {
   const CheckoutPage({super.key});
@@ -51,6 +53,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
         body: BlocConsumer<CheckoutBloc, CheckoutState>(
           listener: (context, state) {
             if (state is CheckoutSuccess) {
+              context.read<CartBloc>().add(ClearCart());
               _showSuccessDialog();
             } else if (state is CheckoutError) {
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));

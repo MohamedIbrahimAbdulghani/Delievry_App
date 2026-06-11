@@ -14,7 +14,7 @@ class OrderPolicy
 
     public function view(User $user, Order $order): bool
     {
-        return $user->is_admin || $order->user_id === $user->id;
+        return $user->isAdmin() || $order->user_id === $user->id || $order->driver_id === $user->id;
     }
 
     public function create(User $user): bool
@@ -24,7 +24,7 @@ class OrderPolicy
 
     public function updateStatus(User $user, Order $order): bool
     {
-        return $user->is_admin;
+        return $user->isAdmin() || $order->driver_id === $user->id;
     }
 
     public function managePayments(User $user, Order $order): bool

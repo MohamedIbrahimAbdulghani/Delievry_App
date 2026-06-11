@@ -4,6 +4,7 @@ import '../../../../core/errors/failures.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../home/domain/entities/restaurant_entity.dart';
 import '../../../home/domain/entities/meal_entity.dart';
+import '../../../home/domain/entities/category_entity.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../domain/repositories/admin_repository.dart';
 import '../datasources/admin_remote_data_source.dart';
@@ -27,6 +28,16 @@ class AdminRepositoryImpl implements AdminRepository {
   Future<Either<Failure, OrderEntity>> updateOrderStatus(int orderId, String status) async {
     try {
       final order = await remoteDataSource.updateOrderStatus(orderId, status);
+      return Right(order);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, OrderEntity>> assignDriver(int orderId, int driverId) async {
+    try {
+      final order = await remoteDataSource.assignDriver(orderId, driverId);
       return Right(order);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
@@ -114,10 +125,60 @@ class AdminRepositoryImpl implements AdminRepository {
   }
 
   @override
+  Future<Either<Failure, List<CategoryEntity>>> getAllCategories() async {
+    try {
+      final categories = await remoteDataSource.getAllCategories();
+      return Right(categories);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, CategoryEntity>> createCategory(Map<String, dynamic> data) async {
+    try {
+      final category = await remoteDataSource.createCategory(data);
+      return Right(category);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, CategoryEntity>> updateCategory(String id, Map<String, dynamic> data) async {
+    try {
+      final category = await remoteDataSource.updateCategory(id, data);
+      return Right(category);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Unit>> deleteCategory(String id) async {
+    try {
+      await remoteDataSource.deleteCategory(id);
+      return const Right(unit);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, List<UserEntity>>> getAllUsers() async {
     try {
       final users = await remoteDataSource.getAllUsers();
       return Right(users);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, UserEntity>> createUser(Map<String, dynamic> data) async {
+    try {
+      final user = await remoteDataSource.createUser(data);
+      return Right(user);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }

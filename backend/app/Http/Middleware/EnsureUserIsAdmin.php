@@ -12,7 +12,7 @@ class EnsureUserIsAdmin
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
-        if (! $user || ! $user->is_admin) {
+        if (! $user || ! $user->isAdmin()) {
             return ApiResponse::error(__('Forbidden.'), [], 403);
         }
 

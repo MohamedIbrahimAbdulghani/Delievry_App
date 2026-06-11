@@ -5,6 +5,7 @@ import '../../../../core/network/dio_client.dart';
 import '../../../auth/data/models/user_model.dart';
 import '../../../home/data/models/restaurant_model.dart';
 import '../../../home/data/models/meal_model.dart';
+import '../../../home/data/models/category_model.dart';
 import '../../../orders/data/models/order_model.dart';
 
 abstract class AdminRemoteDataSource {
@@ -21,9 +22,16 @@ abstract class AdminRemoteDataSource {
   Future<MealModel> updateMeal(int id, Map<String, dynamic> data);
   Future<void> deleteMeal(int id);
 
+  Future<List<CategoryModel>> getAllCategories();
+  Future<CategoryModel> createCategory(Map<String, dynamic> data);
+  Future<CategoryModel> updateCategory(String id, Map<String, dynamic> data);
+  Future<void> deleteCategory(String id);
+
   Future<List<UserModel>> getAllUsers();
+  Future<UserModel> createUser(Map<String, dynamic> data);
   Future<UserModel> updateUser(int id, Map<String, dynamic> data);
   Future<void> deleteUser(int id);
+  Future<OrderModel> assignDriver(int orderId, int driverId);
 
   // Drivers mock storage
   Future<List<Map<String, dynamic>>> getDrivers();
@@ -183,13 +191,90 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
   }
 
   @override
+  Future<List<CategoryModel>> getAllCategories() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = prefs.getString('admin_categories');
+    if (data != null) {
+      final List list = jsonDecode(data);
+      return list.map((json) => CategoryModel.fromJson(Map<String, dynamic>.from(json))).toList();
+    }
+    // Pre-seeded default categories
+    final defaultCategories = [
+      const CategoryModel(id: 'Broast', name: 'Broast', imageUrl: 'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=600', isVisible: true, restaurantIds: [1, 2, 3]),
+      const CategoryModel(id: 'Burgers', name: 'Burgers', imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600', isVisible: true, restaurantIds: [1, 2, 3]),
+      const CategoryModel(id: 'Pizza', name: 'Pizza', imageUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600', isVisible: true, restaurantIds: [1, 2]),
+      const CategoryModel(id: 'Pasta', name: 'Pasta', imageUrl: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600', isVisible: true, restaurantIds: [2, 3]),
+      const CategoryModel(id: 'Sides', name: 'Sides', imageUrl: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600', isVisible: true, restaurantIds: [3]),
+    ];
+    await prefs.setString('admin_categories', jsonEncode(defaultCategories.map((c) => c.toJson()).toList()));
+    return defaultCategories;
+  }
+
+  @override
+  Future<CategoryModel> createCategory(Map<String, dynamic> data) async {
+    final categories = await getAllCategories();
+    final id = data['name'].toString().toLowerCase().replaceAll(' ', '-');
+    final newCat = CategoryModel(
+      id: id,
+      name: data['name'],
+      imageUrl: data['image_url'],
+      isVisible: data['is_visible'] ?? true,
+      restaurantIds: (data['restaurant_ids'] as List?)?.map((e) => int.parse(e.toString())).toList() ?? const [],
+    );
+    categories.add(newCat);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('admin_categories', jsonEncode(categories.map((c) => c.toJson()).toList()));
+    return newCat;
+  }
+
+  @override
+  Future<CategoryModel> updateCategory(String id, Map<String, dynamic> data) async {
+    final categories = await getAllCategories();
+    final index = categories.indexWhere((c) => c.id == id);
+    if (index == -1) {
+      throw Exception('Category not found');
+    }
+    final updatedCat = CategoryModel(
+      id: id,
+      name: data['name'] ?? categories[index].name,
+      imageUrl: data['image_url'] ?? categories[index].imageUrl,
+      isVisible: data['is_visible'] ?? categories[index].isVisible,
+      restaurantIds: data.containsKey('restaurant_ids')
+          ? (data['restaurant_ids'] as List).map((e) => int.parse(e.toString())).toList()
+          : categories[index].restaurantIds,
+    );
+    categories[index] = updatedCat;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('admin_categories', jsonEncode(categories.map((c) => c.toJson()).toList()));
+    return updatedCat;
+  }
+
+  @override
+  Future<void> deleteCategory(String id) async {
+    final categories = await getAllCategories();
+    categories.removeWhere((c) => c.id == id);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('admin_categories', jsonEncode(categories.map((c) => c.toJson()).toList()));
+  }
+
+  @override
   Future<List<UserModel>> getAllUsers() async {
     try {
       final response = await dioClient.get('/users', queryParameters: {'per_page': 100});
       if (response.statusCode == 200) {
         final data = response.data['data'];
         final List list = data != null ? (data['items'] ?? []) : [];
-        return list.map((json) => UserModel.fromJson(Map<String, dynamic>.from(json))).toList();
+        
+        final prefs = await SharedPreferences.getInstance();
+        final blockedIds = prefs.getStringList('blocked_users') ?? [];
+
+        return list.map((json) {
+          final user = UserModel.fromJson(Map<String, dynamic>.from(json));
+          if (blockedIds.contains(user.id.toString())) {
+            return user.copyWith(isBlocked: true);
+          }
+          return user;
+        }).toList();
       }
       throw Exception('Failed to load users');
     } catch (e) {
@@ -198,16 +283,60 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
   }
 
   @override
-  Future<UserModel> updateUser(int id, Map<String, dynamic> data) async {
+  Future<UserModel> createUser(Map<String, dynamic> data) async {
     try {
-      final response = await dioClient.put(
-        '/users/$id',
-        data: data,
-      );
-      if (response.statusCode == 200) {
+      final response = await dioClient.post('/users', data: data);
+      if (response.statusCode == 201 || response.statusCode == 200) {
         return UserModel.fromJson(response.data['data']);
       }
-      throw Exception(response.data['message'] ?? 'Failed to update user');
+      throw Exception(response.data['message'] ?? 'Failed to create user');
+    } catch (e) {
+      throw Exception('Failed to create user: $e');
+    }
+  }
+
+  @override
+  Future<UserModel> updateUser(int id, Map<String, dynamic> data) async {
+    try {
+      if (data.containsKey('is_blocked')) {
+        final isBlocked = data['is_blocked'] as bool;
+        final prefs = await SharedPreferences.getInstance();
+        final blockedIds = prefs.getStringList('blocked_users') ?? [];
+        if (isBlocked) {
+          if (!blockedIds.contains(id.toString())) {
+            blockedIds.add(id.toString());
+          }
+        } else {
+          blockedIds.remove(id.toString());
+        }
+        await prefs.setStringList('blocked_users', blockedIds);
+      }
+
+      final backendData = Map<String, dynamic>.from(data)..remove('is_blocked');
+      UserModel user;
+
+      if (backendData.isNotEmpty) {
+        final response = await dioClient.put(
+          '/users/$id',
+          data: backendData,
+        );
+        if (response.statusCode == 200) {
+          user = UserModel.fromJson(response.data['data']);
+        } else {
+          throw Exception(response.data['message'] ?? 'Failed to update user');
+        }
+      } else {
+        final response = await dioClient.get('/users/$id');
+        if (response.statusCode == 200) {
+          user = UserModel.fromJson(response.data['data']);
+        } else {
+          throw Exception('Failed to fetch user');
+        }
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      final blockedIds = prefs.getStringList('blocked_users') ?? [];
+      return user.copyWith(isBlocked: blockedIds.contains(id.toString()));
     } catch (e) {
       throw Exception('Failed to update user: $e');
     }
@@ -225,20 +354,49 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
     }
   }
 
+  @override
+  Future<OrderModel> assignDriver(int orderId, int driverId) async {
+    try {
+      final response = await dioClient.post(
+        '/orders/$orderId/assign',
+        data: {'driver_id': driverId, '_method': 'PATCH'},
+      );
+      if (response.statusCode == 200) {
+        return OrderModel.fromJson(response.data['data']);
+      }
+      throw Exception(response.data['message'] ?? 'Failed to assign driver');
+    } catch (e) {
+      throw Exception('Failed to assign driver: $e');
+    }
+  }
+
   // Drivers mock storage
   @override
   Future<List<Map<String, dynamic>>> getDrivers() async {
-    final prefs = await SharedPreferences.getInstance();
-    final data = prefs.getString('admin_drivers');
-    if (data != null) {
-      final List list = jsonDecode(data);
-      return list.cast<Map<String, dynamic>>();
+    try {
+      final users = await getAllUsers();
+      final drivers = users.where((u) => u.role == 'delivery').map((u) => {
+        'id': u.id.toString(),
+        'name': u.name,
+        'phone': '+15550001',
+        'status': u.isOnline ? 'online' : 'offline',
+        'is_blocked': u.isBlocked,
+      }).toList();
+      return drivers;
+    } catch (_) {
+      final prefs = await SharedPreferences.getInstance();
+      final data = prefs.getString('admin_drivers');
+      if (data != null) {
+        final List list = jsonDecode(data);
+        return list.cast<Map<String, dynamic>>();
+      }
+      final initialDrivers = [
+        {'id': '1', 'name': 'John Doe', 'phone': '+15550001', 'status': 'available', 'is_blocked': false},
+        {'id': '2', 'name': 'Sam Smith', 'phone': '+15550002', 'status': 'busy', 'is_blocked': false},
+      ];
+      await prefs.setString('admin_drivers', jsonEncode(initialDrivers));
+      return initialDrivers;
     }
-    // Return some default mock drivers initially
-    return [
-      {'id': '1', 'name': 'John Doe', 'phone': '+15550001', 'status': 'available'},
-      {'id': '2', 'name': 'Sam Smith', 'phone': '+15550002', 'status': 'busy'},
-    ];
   }
 
   @override

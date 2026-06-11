@@ -16,7 +16,9 @@ class OrderRepository
     {
         $q = Order::query()->with(['restaurant', 'items']);
 
-        if (! $actor->is_admin) {
+        if ($actor->isDelivery()) {
+            $q->where('driver_id', $actor->id);
+        } elseif (! $actor->isAdmin()) {
             $q->where('user_id', $actor->id);
         } elseif (! empty($query->filters['user_id'])) {
             $q->where('user_id', (int) $query->filters['user_id']);

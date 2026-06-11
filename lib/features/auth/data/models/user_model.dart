@@ -6,6 +6,11 @@ class UserModel extends UserEntity {
     required super.name,
     required super.email,
     required super.isAdmin,
+    super.isBlocked = false,
+    super.role = 'customer',
+    super.isOnline = false,
+    super.latitude,
+    super.longitude,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -14,6 +19,11 @@ class UserModel extends UserEntity {
       name: json['name'],
       email: json['email'],
       isAdmin: json['is_admin'] ?? false,
+      isBlocked: json['is_blocked'] ?? false,
+      role: json['role'] ?? 'customer',
+      isOnline: json['is_online'] ?? false,
+      latitude: json['latitude'] != null ? (json['latitude'] as num).toDouble() : null,
+      longitude: json['longitude'] != null ? (json['longitude'] as num).toDouble() : null,
     );
   }
 
@@ -23,6 +33,35 @@ class UserModel extends UserEntity {
       'name': name,
       'email': email,
       'is_admin': isAdmin,
+      'is_blocked': isBlocked,
+      'role': role,
+      'is_online': isOnline,
+      'latitude': latitude,
+      'longitude': longitude,
     };
+  }
+
+  UserModel copyWith({
+    int? id,
+    String? name,
+    String? email,
+    bool? isAdmin,
+    bool? isBlocked,
+    String? role,
+    bool? isOnline,
+    double? latitude,
+    double? longitude,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      isAdmin: isAdmin ?? this.isAdmin,
+      isBlocked: isBlocked ?? this.isBlocked,
+      role: role ?? this.role,
+      isOnline: isOnline ?? this.isOnline,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+    );
   }
 }

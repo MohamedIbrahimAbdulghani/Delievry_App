@@ -8,6 +8,7 @@ class UserProfileModel extends UserProfileEntity {
     required super.isAdmin,
     super.phone,
     super.imageUrl,
+    super.role = 'customer',
   });
 
   factory UserProfileModel.fromJson(Map<String, dynamic> json) {
@@ -18,6 +19,7 @@ class UserProfileModel extends UserProfileEntity {
       isAdmin: json['is_admin'] ?? false,
       phone: json['phone'],
       imageUrl: json['image_url'],
+      role: json['role'] ?? 'customer',
     );
   }
 
@@ -29,6 +31,7 @@ class UserProfileModel extends UserProfileEntity {
       'is_admin': isAdmin,
       'phone': phone,
       'image_url': imageUrl,
+      'role': role,
     };
   }
 }

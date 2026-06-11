@@ -9,6 +9,7 @@ import '../../../home/domain/entities/restaurant_entity.dart';
 import '../../../home/domain/entities/meal_entity.dart';
 import '../../../home/domain/entities/category_entity.dart';
 import '../../../orders/domain/entities/order_entity.dart';
+import '../../../auth/domain/entities/user_entity.dart';
 import '../../../profile/domain/repositories/user_repository.dart';
 import '../bloc/admin_bloc.dart';
 import '../bloc/admin_event.dart';
@@ -50,6 +51,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       create: (context) => _adminBloc,
       child: Scaffold(
         key: _scaffoldKey,
+        floatingActionButton: BlocBuilder<AdminBloc, AdminState>(
+          builder: (context, state) {
+            if (state is! AdminLoaded) return const SizedBox.shrink();
+            return _buildFAB(context, state) ?? const SizedBox.shrink();
+          },
+        ),
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 1,
@@ -251,7 +258,50 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     }
   }
 
-  // Helper date formatter
+  Widget? _buildFAB(BuildContext context, AdminLoaded state) {
+    if (MediaQuery.of(context).size.width >= 800) return null;
+
+    switch (_activeTab) {
+      case 2: // Restaurants
+        return FloatingActionButton(
+          heroTag: 'fab_restaurants',
+          onPressed: () => _showRestaurantForm(context),
+          backgroundColor: AppColors.primary,
+          child: const Icon(Icons.add, color: Colors.white),
+        );
+      case 3: // Meals
+        return FloatingActionButton(
+          heroTag: 'fab_meals',
+          onPressed: () => _showMealForm(context, state.restaurants, state.categories),
+          backgroundColor: AppColors.primary,
+          child: const Icon(Icons.add, color: Colors.white),
+        );
+      case 4: // Categories
+        return FloatingActionButton(
+          heroTag: 'fab_categories',
+          onPressed: () => _showCategoryForm(context, state.restaurants),
+          backgroundColor: AppColors.primary,
+          child: const Icon(Icons.add, color: Colors.white),
+        );
+      case 5: // Users
+        return FloatingActionButton(
+          heroTag: 'fab_users',
+          onPressed: () => _showUserForm(context),
+          backgroundColor: AppColors.primary,
+          child: const Icon(Icons.person_add_alt_1_rounded, color: Colors.white),
+        );
+      case 6: // Drivers
+        return FloatingActionButton(
+          heroTag: 'fab_drivers',
+          onPressed: () => _showDriverForm(context, state.drivers),
+          backgroundColor: AppColors.primary,
+          child: const Icon(Icons.delivery_dining_rounded, color: Colors.white),
+        );
+      default:
+        return null;
+    }
+  }
+
   String _formatDate(DateTime dt) {
     return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
@@ -260,17 +310,20 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   // TAB 0: DASHBOARD VIEW
   // -------------------------------------------------------------
   Widget _buildDashboardView(AdminLoaded state) {
+    final pendingCount = state.orders.where((o) => o.status == OrderStatus.pending).length;
+    final totalDrivers = state.drivers.length;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Stat Cards Row
+          // Stat Cards Grid (8 Cards)
           GridView.count(
             crossAxisCount: MediaQuery.of(context).size.width < 600
                 ? 2
                 : MediaQuery.of(context).size.width < 1100
-                    ? 2
+                    ? 3
                     : 4,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
@@ -291,16 +344,40 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 [const Color(0xFF1E88E5), const Color(0xFF42A5F5)],
               ),
               _buildStatCard(
+                'Pending Orders',
+                '$pendingCount',
+                Icons.pending_actions_rounded,
+                [const Color(0xFFFDD835), const Color(0xFFFBC02D)],
+              ),
+              _buildStatCard(
                 'Restaurants',
                 '${state.totalRestaurants}',
                 Icons.restaurant_rounded,
                 [const Color(0xFFF4511E), const Color(0xFFFF7043)],
               ),
               _buildStatCard(
+                'Meals Available',
+                '${state.totalMeals}',
+                Icons.fastfood_rounded,
+                [const Color(0xFFE53935), const Color(0xFFEF5350)],
+              ),
+              _buildStatCard(
+                'Categories',
+                '${state.totalCategories}',
+                Icons.category_rounded,
+                [const Color(0xFF00ACC1), const Color(0xFF26C6DA)],
+              ),
+              _buildStatCard(
+                'Active Drivers',
+                '$totalDrivers',
+                Icons.delivery_dining_rounded,
+                [const Color(0xFF8E24AA), const Color(0xFFAB47BC)],
+              ),
+              _buildStatCard(
                 'Users Registered',
                 '${state.totalUsers}',
                 Icons.people_rounded,
-                [const Color(0xFF7B1FA2), const Color(0xFFAB47BC)],
+                [const Color(0xFF5E35B1), const Color(0xFF7E57C2)],
               ),
             ],
           ),
@@ -312,6 +389,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               Expanded(
                 flex: 2,
                 child: Card(
+                  elevation: 1,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   child: Padding(
                     padding: const EdgeInsets.all(20),
@@ -319,7 +397,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Recent Orders',
+                          'Latest Orders',
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 16),
@@ -338,7 +416,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                       'Order #${order.id} - ${order.restaurant.name}',
                                       style: const TextStyle(fontWeight: FontWeight.w600),
                                     ),
-                                    subtitle: Text(_formatDate(order.createdAt)),
+                                    subtitle: Text('${_formatDate(order.createdAt)} | Status: ${order.status.displayName}'),
                                     trailing: Text(
                                       '\$${order.totalAmount.toStringAsFixed(2)}',
                                       style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
@@ -355,6 +433,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               if (MediaQuery.of(context).size.width >= 1100)
                 Expanded(
                   child: Card(
+                    elevation: 1,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
                       padding: const EdgeInsets.all(20),
@@ -406,10 +485,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
         boxShadow: [
-          BoxShadow(color: colors[0].withAlpha(50), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: colors[0].withAlpha(40), blurRadius: 8, offset: const Offset(0, 4)),
         ],
       ),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -417,16 +496,19 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              Icon(icon, color: Colors.white.withAlpha(200), size: 24),
+              Icon(icon, color: Colors.white.withAlpha(190), size: 22),
             ],
           ),
           Text(
             value,
-            style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+            style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
           )
         ],
       ),
@@ -529,10 +611,20 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         return Colors.blueAccent;
       case OrderStatus.preparing:
         return Colors.blue;
-      case OrderStatus.out_for_delivery:
+      case OrderStatus.accepted:
+        return Colors.cyan;
+      case OrderStatus.heading_to_restaurant:
+        return Colors.teal;
+      case OrderStatus.picked_up:
         return Colors.purple;
+      case OrderStatus.on_the_way:
+        return Colors.indigo;
+      case OrderStatus.out_for_delivery:
+        return Colors.deepPurple;
       case OrderStatus.delivered:
         return Colors.green;
+      case OrderStatus.failed:
+        return Colors.redAccent;
       case OrderStatus.cancelled:
         return Colors.red;
     }
@@ -582,38 +674,39 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         spacing: 8,
                         runSpacing: 8,
                         children: OrderStatus.values.map((s) {
-                          final isCurrent = order.status == s;
-                          return ChoiceChip(
-                            label: Text(s.displayName),
-                            selected: isCurrent,
-                            onSelected: (selected) {
-                              if (selected) {
-                                Navigator.pop(ctx);
-                                _adminBloc.add(UpdateOrderStatusEvent(orderId: order.id, status: s.apiValue));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Order #${order.id} updated to ${s.displayName}')),
-                                );
-                              }
-                            },
-                          );
+                           final isCurrent = order.status == s;
+                           return ChoiceChip(
+                             label: Text(s.displayName),
+                             selected: isCurrent,
+                             onSelected: (selected) {
+                               if (selected) {
+                                 Navigator.pop(ctx);
+                                 _adminBloc.add(UpdateOrderStatusEvent(orderId: order.id, status: s.apiValue));
+                               }
+                             },
+                           );
                         }).toList(),
                       ),
                       const Divider(height: 24),
-                      const Text('Assign Driver (Simulation):', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Text('Assign Driver:', style: TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       DropdownButton<String>(
                         isExpanded: true,
                         value: selectedDriverId,
                         hint: const Text('Select Driver'),
-                        items: drivers.map((d) => DropdownMenuItem(
+                        items: drivers.where((d) => !(d['is_blocked'] ?? false)).map((d) => DropdownMenuItem(
                               value: d['id'].toString(),
                               child: Text('${d['name']} (${d['status']})'),
                             )).toList(),
                         onChanged: (dId) {
-                          setModalState(() => selectedDriverId = dId);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Driver assigned successfully!')),
-                          );
+                          if (dId != null) {
+                            setModalState(() => selectedDriverId = dId);
+                            Navigator.pop(ctx);
+                            _adminBloc.add(AssignDriverEvent(
+                              orderId: order.id,
+                              driverId: int.parse(dId),
+                            ));
+                          }
                         },
                       )
                     ],
@@ -642,12 +735,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Manage Restaurants', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              ElevatedButton.icon(
-                onPressed: () => _showRestaurantForm(context),
-                icon: const Icon(Icons.add, color: Colors.white),
-                label: const Text('Add Restaurant', style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-              ),
+              if (MediaQuery.of(context).size.width >= 800)
+                ElevatedButton.icon(
+                  onPressed: () => _showRestaurantForm(context),
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  label: const Text('Add Restaurant', style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                ),
             ],
           ),
           const SizedBox(height: 24),
@@ -656,52 +750,185 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               itemCount: state.restaurants.length,
               itemBuilder: (context, index) {
                 final rest = state.restaurants[index];
+                final isMobile = MediaQuery.of(context).size.width < 600;
+
+                Widget buildCardContent() {
+                  final leadingWidget = CircleAvatar(
+                    backgroundImage: rest.imageUrl != null ? NetworkImage(rest.imageUrl!) : null,
+                    backgroundColor: AppColors.primary.withAlpha(30),
+                    child: rest.imageUrl == null ? const Icon(Icons.restaurant, color: AppColors.primary) : null,
+                  );
+                  final titleWidget = Text(rest.name, style: const TextStyle(fontWeight: FontWeight.bold));
+                  final subtitleWidget = Text('${rest.city} | Delivery Fee: \$${rest.deliveryFee.toStringAsFixed(2)}');
+
+                  if (isMobile) {
+                    return Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              leadingWidget,
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    titleWidget,
+                                    const SizedBox(height: 4),
+                                    subtitleWidget,
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(height: 24),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Text('Active', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                    height: 30,
+                                    child: Switch(
+                                      value: rest.isActive,
+                                      onChanged: (active) {
+                                        _adminBloc.add(UpdateRestaurantEvent(
+                                          id: rest.id,
+                                          data: {
+                                            'name': rest.name,
+                                            'slug': rest.slug,
+                                            'city': rest.city,
+                                            'address': rest.address,
+                                            'phone': rest.phone,
+                                            'delivery_fee': rest.deliveryFee,
+                                            'image_url': rest.imageUrl,
+                                            'is_active': active,
+                                          },
+                                        ));
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.info_outline, color: Colors.teal),
+                                    onPressed: () => _showRestaurantDetails(context, rest),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, color: Colors.blue),
+                                    onPressed: () => _showRestaurantForm(context, restaurant: rest),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () => _showDeleteConfirmation(context, () {
+                                      _adminBloc.add(DeleteRestaurantEvent(rest.id));
+                                    }),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  } else {
+                    return ListTile(
+                      leading: leadingWidget,
+                      title: titleWidget,
+                      subtitle: subtitleWidget,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Switch(
+                            value: rest.isActive,
+                            onChanged: (active) {
+                              _adminBloc.add(UpdateRestaurantEvent(
+                                id: rest.id,
+                                data: {
+                                  'name': rest.name,
+                                  'slug': rest.slug,
+                                  'city': rest.city,
+                                  'address': rest.address,
+                                  'phone': rest.phone,
+                                  'delivery_fee': rest.deliveryFee,
+                                  'image_url': rest.imageUrl,
+                                  'is_active': active,
+                                },
+                              ));
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.info_outline, color: Colors.teal),
+                            onPressed: () => _showRestaurantDetails(context, rest),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.blue),
+                            onPressed: () => _showRestaurantForm(context, restaurant: rest),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => _showDeleteConfirmation(context, () {
+                              _adminBloc.add(DeleteRestaurantEvent(rest.id));
+                            }),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                }
+
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: AppColors.primary.withAlpha(30),
-                      child: const Icon(Icons.restaurant, color: AppColors.primary),
-                    ),
-                    title: Text(rest.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('${rest.city} | Delivery Fee: \$${rest.deliveryFee.toStringAsFixed(2)}'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Switch(
-                          value: rest.isActive,
-                          onChanged: (active) {
-                            _adminBloc.add(UpdateRestaurantEvent(
-                              id: rest.id,
-                              data: {
-                                'name': rest.name,
-                                'slug': rest.slug,
-                                'city': rest.city,
-                                'address': rest.address,
-                                'phone': rest.phone,
-                                'delivery_fee': rest.deliveryFee,
-                                'is_active': active,
-                              },
-                            ));
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blue),
-                          onPressed: () => _showRestaurantForm(context, restaurant: rest),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _showDeleteConfirmation(context, () {
-                            _adminBloc.add(DeleteRestaurantEvent(rest.id));
-                          }),
-                        ),
-                      ],
-                    ),
-                  ),
+                  elevation: 1,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: buildCardContent(),
                 );
               },
             ),
           )
+        ],
+      ),
+    );
+  }
+
+  void _showRestaurantDetails(BuildContext context, RestaurantEntity rest) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(rest.name),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (rest.imageUrl != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(rest.imageUrl!, height: 180, width: double.infinity, fit: BoxFit.cover),
+                ),
+              const SizedBox(height: 16),
+              Text('City: ${rest.city}', style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text('Address: ${rest.address}'),
+              const SizedBox(height: 8),
+              Text('Phone: ${rest.phone}'),
+              const SizedBox(height: 8),
+              Text('Delivery Fee: \$${rest.deliveryFee.toStringAsFixed(2)}'),
+              const SizedBox(height: 8),
+              Text('Status: ${rest.isActive ? "Active" : "Inactive"}', style: TextStyle(color: rest.isActive ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
         ],
       ),
     );
@@ -714,89 +941,254 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final addressController = TextEditingController(text: restaurant?.address ?? '');
     final phoneController = TextEditingController(text: restaurant?.phone ?? '');
     final feeController = TextEditingController(text: restaurant?.deliveryFee.toString() ?? '');
+    String? imageUrl = restaurant?.imageUrl;
     bool isActive = restaurant?.isActive ?? true;
+
+    final restaurantPresetImages = [
+      {'name': 'Italian Bistro', 'url': 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600'},
+      {'name': 'Burger Joint', 'url': 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600'},
+      {'name': 'Sushi Bar', 'url': 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=600'},
+      {'name': 'Coffee House', 'url': 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=600'},
+    ];
 
     showDialog(
       context: context,
       builder: (ctx) {
-        return AlertDialog(
-          title: Text(restaurant == null ? 'Add Restaurant' : 'Edit Restaurant'),
-          content: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Name'),
-                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+        return StatefulBuilder(
+          builder: (context, setStateBuilder) {
+            return AlertDialog(
+              title: Text(restaurant == null ? 'Add Restaurant' : 'Edit Restaurant'),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: nameController,
+                        decoration: const InputDecoration(labelText: 'Name'),
+                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                      ),
+                      TextFormField(
+                        controller: cityController,
+                        decoration: const InputDecoration(labelText: 'City'),
+                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                      ),
+                      TextFormField(
+                        controller: addressController,
+                        decoration: const InputDecoration(labelText: 'Address'),
+                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                      ),
+                      TextFormField(
+                        controller: phoneController,
+                        decoration: const InputDecoration(labelText: 'Phone'),
+                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                      ),
+                      TextFormField(
+                        controller: feeController,
+                        decoration: const InputDecoration(labelText: 'Delivery Fee'),
+                        keyboardType: TextInputType.number,
+                        validator: (v) => double.tryParse(v ?? '') == null ? 'Must be a valid number' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      // Custom image upload dialog mockup
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text('Restaurant Image', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(height: 8),
+                      imageUrl != null
+                          ? Container(
+                              height: 120,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                image: DecorationImage(image: NetworkImage(imageUrl!), fit: BoxFit.cover),
+                              ),
+                            )
+                          : Container(
+                              height: 120,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(Icons.image_search, size: 40),
+                            ),
+                      TextButton.icon(
+                        onPressed: () {
+                          _showImageSelector(context, restaurantPresetImages, (url) {
+                            setStateBuilder(() => imageUrl = url);
+                          });
+                        },
+                        icon: const Icon(Icons.upload),
+                        label: const Text('Simulate Image Upload'),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Active Status'),
+                          Switch(
+                            value: isActive,
+                            onChanged: (val) => setStateBuilder(() => isActive = val),
+                          )
+                        ],
+                      ),
+                    ],
                   ),
-                  TextFormField(
-                    controller: cityController,
-                    decoration: const InputDecoration(labelText: 'City'),
-                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                  ),
-                  TextFormField(
-                    controller: addressController,
-                    decoration: const InputDecoration(labelText: 'Address'),
-                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                  ),
-                  TextFormField(
-                    controller: phoneController,
-                    decoration: const InputDecoration(labelText: 'Phone'),
-                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                  ),
-                  TextFormField(
-                    controller: feeController,
-                    decoration: const InputDecoration(labelText: 'Delivery Fee'),
-                    keyboardType: TextInputType.number,
-                    validator: (v) => double.tryParse(v ?? '') == null ? 'Must be a valid number' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  StatefulBuilder(
-                    builder: (context, setStateBuilder) => Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Active Status'),
-                        Switch(
-                          value: isActive,
-                          onChanged: (val) => setStateBuilder(() => isActive = val),
-                        )
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-            ),
-            TextButton(
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  final data = {
-                    'name': nameController.text,
-                    'city': cityController.text,
-                    'address': addressController.text,
-                    'phone': phoneController.text,
-                    'delivery_fee': double.parse(feeController.text),
-                    'is_active': isActive,
-                  };
-                  if (restaurant == null) {
-                    _adminBloc.add(CreateRestaurantEvent(data));
-                  } else {
-                    _adminBloc.add(UpdateRestaurantEvent(id: restaurant.id, data: data));
-                  }
-                  Navigator.pop(ctx);
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+                ),
+                TextButton(
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      final data = {
+                        'name': nameController.text,
+                        'city': cityController.text,
+                        'address': addressController.text,
+                        'phone': phoneController.text,
+                        'delivery_fee': double.parse(feeController.text),
+                        'image_url': imageUrl,
+                        'is_active': isActive,
+                        'slug': nameController.text.toLowerCase().replaceAll(' ', '-'),
+                      };
+                      if (restaurant == null) {
+                        _adminBloc.add(CreateRestaurantEvent(data));
+                      } else {
+                        _adminBloc.add(UpdateRestaurantEvent(id: restaurant.id, data: data));
+                      }
+                      Navigator.pop(ctx);
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showImageSelector(BuildContext context, List<Map<String, String>> presets, Function(String) onSelect) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        bool uploading = false;
+        double progress = 0.0;
+        final customUrlController = TextEditingController();
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              title: const Text('Select / Upload Image'),
+              content: SizedBox(
+                width: 400,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (uploading) ...[
+                        const Text('Uploading File...'),
+                        const SizedBox(height: 12),
+                        LinearProgressIndicator(value: progress),
+                        const SizedBox(height: 16),
+                      ] else ...[
+                        const Text('Choose from Premium Presets:'),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 160,
+                          child: GridView.builder(
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 8,
+                              mainAxisSpacing: 8,
+                            ),
+                            itemCount: presets.length,
+                            itemBuilder: (context, index) {
+                              final p = presets[index];
+                              return GestureDetector(
+                                onTap: () {
+                                  onSelect(p['url']!);
+                                  Navigator.pop(ctx);
+                                },
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      Image.network(p['url']!, fit: BoxFit.cover),
+                                      Container(color: Colors.black26),
+                                      Center(
+                                        child: Text(
+                                          p['name']!,
+                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      )
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const Divider(height: 24),
+                        const Text('Or Enter Custom Image URL:'),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: customUrlController,
+                          decoration: const InputDecoration(labelText: 'URL String'),
+                        ),
+                        const SizedBox(height: 8),
+                        ElevatedButton(
+                          onPressed: () {
+                            if (customUrlController.text.isNotEmpty) {
+                              onSelect(customUrlController.text);
+                              Navigator.pop(ctx);
+                            }
+                          },
+                          child: const Text('Apply URL'),
+                        ),
+                        const Divider(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            setModalState(() {
+                              uploading = true;
+                              progress = 0.1;
+                            });
+                            // Simulate upload loading
+                            for (int i = 2; i <= 10; i++) {
+                              await Future.delayed(const Duration(milliseconds: 150));
+                              if (context.mounted) {
+                                setModalState(() {
+                                  progress = i / 10.0;
+                                });
+                              }
+                            }
+                            onSelect(presets[0]['url']!);
+                            if (context.mounted) {
+                              Navigator.pop(ctx);
+                            }
+                          },
+                          icon: const Icon(Icons.file_upload),
+                          label: const Text('Mock Local File Upload'),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+              ],
+            );
+          },
         );
       },
     );
@@ -817,9 +1209,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             onPressed: () {
               Navigator.pop(ctx);
               onConfirm();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Item deleted successfully')),
-              );
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -840,12 +1229,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Manage Meals', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              ElevatedButton.icon(
-                onPressed: () => _showMealForm(context, state.restaurants),
-                icon: const Icon(Icons.add, color: Colors.white),
-                label: const Text('Add Meal', style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-              ),
+              if (MediaQuery.of(context).size.width >= 800)
+                ElevatedButton.icon(
+                  onPressed: () => _showMealForm(context, state.restaurants, state.categories),
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  label: const Text('Add Meal', style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                ),
             ],
           ),
           const SizedBox(height: 24),
@@ -854,52 +1244,150 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               itemCount: state.meals.length,
               itemBuilder: (context, index) {
                 final meal = state.meals[index];
-                // Find restaurant name
-                final restName = state.restaurants.cast<RestaurantEntity>().firstWhere((r) => r.id == meal.restaurantId,
-                    orElse: () => const RestaurantEntity(id: 0, name: 'Unknown', slug: '', city: '', address: '', phone: '', deliveryFee: 0, isActive: false)).name;
+                final matchedRestaurant = state.restaurants.cast<RestaurantEntity?>().firstWhere(
+                  (r) => r?.id == meal.restaurantId,
+                  orElse: () => null,
+                );
+                final restName = matchedRestaurant?.name ?? 'Unknown';
+                final isMobile = MediaQuery.of(context).size.width < 600;
+
+                Widget buildCardContent() {
+                  final leadingWidget = CircleAvatar(
+                    backgroundImage: meal.imageUrl != null ? NetworkImage(meal.imageUrl!) : null,
+                    backgroundColor: AppColors.primary.withAlpha(30),
+                    child: meal.imageUrl == null ? const Icon(Icons.fastfood, color: AppColors.primary) : null,
+                  );
+                  final titleWidget = Text(meal.name, style: const TextStyle(fontWeight: FontWeight.bold));
+                  final subtitleWidget = Text('Price: \$${meal.price.toStringAsFixed(2)} | Category: ${meal.category} | Rest: $restName');
+
+                  if (isMobile) {
+                    return Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              leadingWidget,
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    titleWidget,
+                                    const SizedBox(height: 4),
+                                    subtitleWidget,
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(height: 24),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Text('Available', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                    height: 30,
+                                    child: Switch(
+                                      value: meal.isAvailable,
+                                      onChanged: (avail) {
+                                        _adminBloc.add(UpdateMealEvent(
+                                          id: meal.id,
+                                          data: {
+                                            'restaurant_id': meal.restaurantId,
+                                            'name': meal.name,
+                                            'slug': meal.slug,
+                                            'description': meal.description,
+                                            'price': meal.price,
+                                            'category': meal.category,
+                                            'image_url': meal.imageUrl,
+                                            'is_available': avail,
+                                          },
+                                        ));
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.info_outline, color: Colors.teal),
+                                    onPressed: () => _showMealDetails(context, meal, restName),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, color: Colors.blue),
+                                    onPressed: () => _showMealForm(context, state.restaurants, state.categories, meal: meal),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () => _showDeleteConfirmation(context, () {
+                                      _adminBloc.add(DeleteMealEvent(meal.id));
+                                    }),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  } else {
+                    return ListTile(
+                      leading: leadingWidget,
+                      title: titleWidget,
+                      subtitle: subtitleWidget,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Switch(
+                            value: meal.isAvailable,
+                            onChanged: (avail) {
+                              _adminBloc.add(UpdateMealEvent(
+                                id: meal.id,
+                                data: {
+                                  'restaurant_id': meal.restaurantId,
+                                  'name': meal.name,
+                                  'slug': meal.slug,
+                                  'description': meal.description,
+                                  'price': meal.price,
+                                  'category': meal.category,
+                                  'image_url': meal.imageUrl,
+                                  'is_available': avail,
+                                },
+                              ));
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.info_outline, color: Colors.teal),
+                            onPressed: () => _showMealDetails(context, meal, restName),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.blue),
+                            onPressed: () => _showMealForm(context, state.restaurants, state.categories, meal: meal),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => _showDeleteConfirmation(context, () {
+                              _adminBloc.add(DeleteMealEvent(meal.id));
+                            }),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                }
 
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: AppColors.primary.withAlpha(30),
-                      child: const Icon(Icons.fastfood, color: AppColors.primary),
-                    ),
-                    title: Text(meal.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('Price: \$${meal.price.toStringAsFixed(2)} | Category: ${meal.category} | Rest: $restName'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Switch(
-                          value: meal.isAvailable,
-                          onChanged: (avail) {
-                            _adminBloc.add(UpdateMealEvent(
-                              id: meal.id,
-                              data: {
-                                'restaurant_id': meal.restaurantId,
-                                'name': meal.name,
-                                'slug': meal.slug,
-                                'description': meal.description,
-                                'price': meal.price,
-                                'category': meal.category,
-                                'is_available': avail,
-                              },
-                            ));
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blue),
-                          onPressed: () => _showMealForm(context, state.restaurants, meal: meal),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _showDeleteConfirmation(context, () {
-                            _adminBloc.add(DeleteMealEvent(meal.id));
-                          }),
-                        ),
-                      ],
-                    ),
-                  ),
+                  elevation: 1,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: buildCardContent(),
                 );
               },
             ),
@@ -909,101 +1397,187 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  void _showMealForm(BuildContext context, List<RestaurantEntity> restaurants, {MealEntity? meal}) {
+  void _showMealDetails(BuildContext context, MealEntity meal, String restName) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(meal.name),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (meal.imageUrl != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(meal.imageUrl!, height: 180, width: double.infinity, fit: BoxFit.cover),
+                ),
+              const SizedBox(height: 16),
+              Text('Price: \$${meal.price.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.primary)),
+              const SizedBox(height: 8),
+              Text('Category: ${meal.category}'),
+              const SizedBox(height: 8),
+              Text('Restaurant: $restName'),
+              const SizedBox(height: 8),
+              Text('Description: ${meal.description}'),
+              const SizedBox(height: 8),
+              Text('Available: ${meal.isAvailable ? "Yes" : "No"}', style: TextStyle(color: meal.isAvailable ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
+  void _showMealForm(BuildContext context, List<RestaurantEntity> restaurants, List<CategoryEntity> categories, {MealEntity? meal}) {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: meal?.name ?? '');
     final descriptionController = TextEditingController(text: meal?.description ?? '');
     final priceController = TextEditingController(text: meal?.price.toString() ?? '');
-    final categoryController = TextEditingController(text: meal?.category ?? '');
+    String? selectedCategoryName = meal?.category ?? (categories.isNotEmpty ? categories.first.name : null);
     int? selectedRestaurantId = meal?.restaurantId ?? (restaurants.isNotEmpty ? restaurants.first.id : null);
+    String? imageUrl = meal?.imageUrl;
     bool isAvailable = meal?.isAvailable ?? true;
+
+    final mealPresetImages = [
+      {'name': 'Pizza slice', 'url': 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600'},
+      {'name': 'Beef Burger', 'url': 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600'},
+      {'name': 'Ramen noodles', 'url': 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=600'},
+      {'name': 'Dessert Cake', 'url': 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=600'},
+    ];
 
     showDialog(
       context: context,
       builder: (ctx) {
-        return AlertDialog(
-          title: Text(meal == null ? 'Add Meal' : 'Edit Meal'),
-          content: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DropdownButtonFormField<int>(
-                    decoration: const InputDecoration(labelText: 'Restaurant'),
-                    initialValue: selectedRestaurantId,
-                    items: restaurants.map((r) => DropdownMenuItem(
-                          value: r.id,
-                          child: Text(r.name),
-                        )).toList(),
-                    onChanged: (val) => selectedRestaurantId = val,
-                    validator: (v) => v == null ? 'Required' : null,
+        return StatefulBuilder(
+          builder: (context, setStateBuilder) {
+            return AlertDialog(
+              title: Text(meal == null ? 'Add Meal' : 'Edit Meal'),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      DropdownButtonFormField<int>(
+                        decoration: const InputDecoration(labelText: 'Restaurant'),
+                        initialValue: selectedRestaurantId,
+                        items: restaurants.map((r) => DropdownMenuItem(
+                              value: r.id,
+                              child: Text(r.name),
+                            )).toList(),
+                        onChanged: (val) => selectedRestaurantId = val,
+                        validator: (v) => v == null ? 'Required' : null,
+                      ),
+                      TextFormField(
+                        controller: nameController,
+                        decoration: const InputDecoration(labelText: 'Name'),
+                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                      ),
+                      TextFormField(
+                        controller: descriptionController,
+                        decoration: const InputDecoration(labelText: 'Description'),
+                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                      ),
+                      TextFormField(
+                        controller: priceController,
+                        decoration: const InputDecoration(labelText: 'Price'),
+                        keyboardType: TextInputType.number,
+                        validator: (v) => double.tryParse(v ?? '') == null ? 'Must be a valid number' : null,
+                      ),
+                      DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(labelText: 'Category'),
+                        initialValue: selectedCategoryName,
+                        items: categories.map((c) => DropdownMenuItem(
+                              value: c.name,
+                              child: Text(c.name),
+                            )).toList(),
+                        onChanged: (val) => selectedCategoryName = val,
+                        validator: (v) => v == null ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text('Meal Image', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(height: 8),
+                      imageUrl != null
+                          ? Container(
+                              height: 120,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                image: DecorationImage(image: NetworkImage(imageUrl!), fit: BoxFit.cover),
+                              ),
+                            )
+                          : Container(
+                              height: 120,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(Icons.image, size: 40),
+                            ),
+                      TextButton.icon(
+                        onPressed: () {
+                          _showImageSelector(context, mealPresetImages, (url) {
+                            setStateBuilder(() => imageUrl = url);
+                          });
+                        },
+                        icon: const Icon(Icons.upload_file),
+                        label: const Text('Simulate Image Upload'),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Available Status'),
+                          Switch(
+                            value: isAvailable,
+                            onChanged: (val) => setStateBuilder(() => isAvailable = val),
+                          )
+                        ],
+                      ),
+                    ],
                   ),
-                  TextFormField(
-                    controller: nameController,
-                    decoration: const InputDecoration(labelText: 'Name'),
-                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                  ),
-                  TextFormField(
-                    controller: descriptionController,
-                    decoration: const InputDecoration(labelText: 'Description'),
-                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                  ),
-                  TextFormField(
-                    controller: priceController,
-                    decoration: const InputDecoration(labelText: 'Price'),
-                    keyboardType: TextInputType.number,
-                    validator: (v) => double.tryParse(v ?? '') == null ? 'Must be a valid number' : null,
-                  ),
-                  TextFormField(
-                    controller: categoryController,
-                    decoration: const InputDecoration(labelText: 'Category (Pizza, Burgers, etc.)'),
-                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  StatefulBuilder(
-                    builder: (context, setStateBuilder) => Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Available Status'),
-                        Switch(
-                          value: isAvailable,
-                          onChanged: (val) => setStateBuilder(() => isAvailable = val),
-                        )
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-            ),
-            TextButton(
-              onPressed: () {
-                if (formKey.currentState!.validate()) {
-                  final data = {
-                    'restaurant_id': selectedRestaurantId,
-                    'name': nameController.text,
-                    'description': descriptionController.text,
-                    'price': double.parse(priceController.text),
-                    'category': categoryController.text,
-                    'is_available': isAvailable,
-                  };
-                  if (meal == null) {
-                    _adminBloc.add(CreateMealEvent(data));
-                  } else {
-                    _adminBloc.add(UpdateMealEvent(id: meal.id, data: data));
-                  }
-                  Navigator.pop(ctx);
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+                ),
+                TextButton(
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      final data = {
+                        'restaurant_id': selectedRestaurantId,
+                        'name': nameController.text,
+                        'description': descriptionController.text,
+                        'price': double.parse(priceController.text),
+                        'category': selectedCategoryName,
+                        'image_url': imageUrl,
+                        'is_available': isAvailable,
+                        'slug': nameController.text.toLowerCase().replaceAll(' ', '-'),
+                      };
+                      if (meal == null) {
+                        _adminBloc.add(CreateMealEvent(data));
+                      } else {
+                        _adminBloc.add(UpdateMealEvent(id: meal.id, data: data));
+                      }
+                      Navigator.pop(ctx);
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -1013,14 +1587,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   // TAB 4: CATEGORY MANAGEMENT
   // -------------------------------------------------------------
   Widget _buildCategoriesView(AdminLoaded state) {
-    // Collect all categories dynamically from meals
-    final categories = state.meals
-        .map((m) => m.category)
-        .toSet()
-        .map((name) => CategoryEntity(id: name, name: name))
-        .toList();
-    final catNameController = TextEditingController();
-
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -1029,57 +1595,144 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Manage Categories', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              ElevatedButton.icon(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: const Text('Add Category'),
-                      content: TextField(
-                        controller: catNameController,
-                        decoration: const InputDecoration(hintText: 'Category Name (e.g. Desserts)'),
-                      ),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-                        TextButton(
-                          onPressed: () {
-                            if (catNameController.text.isNotEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Category "${catNameController.text}" created successfully!')),
-                              );
-                              Navigator.pop(ctx);
-                            }
-                          },
-                          child: const Text('Save'),
-                        )
-                      ],
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.add, color: Colors.white),
-                label: const Text('Add Category', style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-              ),
+              if (MediaQuery.of(context).size.width >= 800)
+                ElevatedButton.icon(
+                  onPressed: () => _showCategoryForm(context, state.restaurants),
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  label: const Text('Add Category', style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                ),
             ],
           ),
           const SizedBox(height: 24),
           Expanded(
             child: ListView.builder(
-              itemCount: categories.length,
+              itemCount: state.categories.length,
               itemBuilder: (context, index) {
-                final cat = categories[index];
+                final cat = state.categories[index];
+                final isMobile = MediaQuery.of(context).size.width < 600;
+
+                Widget buildCardContent() {
+                  final leadingWidget = CircleAvatar(
+                    backgroundImage: cat.imageUrl != null ? NetworkImage(cat.imageUrl!) : null,
+                    backgroundColor: AppColors.primary.withAlpha(30),
+                    child: cat.imageUrl == null ? const Icon(Icons.category_rounded, color: AppColors.primary) : null,
+                  );
+                  final titleWidget = Text(cat.name, style: const TextStyle(fontWeight: FontWeight.bold));
+                  final subtitleWidget = Text('Visibility: ${cat.isVisible ? "Visible" : "Hidden"} | Assigned Restaurants: ${cat.restaurantIds.length}');
+
+                  if (isMobile) {
+                    return Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              leadingWidget,
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    titleWidget,
+                                    const SizedBox(height: 4),
+                                    subtitleWidget,
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(height: 24),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Text('Visible', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                    height: 30,
+                                    child: Switch(
+                                      value: cat.isVisible,
+                                      onChanged: (visible) {
+                                        _adminBloc.add(UpdateCategoryEvent(
+                                          id: cat.id,
+                                          data: {
+                                            'name': cat.name,
+                                            'image_url': cat.imageUrl,
+                                            'is_visible': visible,
+                                            'restaurant_ids': cat.restaurantIds,
+                                          },
+                                        ));
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, color: Colors.blue),
+                                    onPressed: () => _showCategoryForm(context, state.restaurants, category: cat),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () => _showDeleteConfirmation(context, () {
+                                      _adminBloc.add(DeleteCategoryEvent(cat.id));
+                                    }),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  } else {
+                    return ListTile(
+                      leading: leadingWidget,
+                      title: titleWidget,
+                      subtitle: subtitleWidget,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Switch(
+                            value: cat.isVisible,
+                            onChanged: (visible) {
+                              _adminBloc.add(UpdateCategoryEvent(
+                                id: cat.id,
+                                data: {
+                                  'name': cat.name,
+                                  'image_url': cat.imageUrl,
+                                  'is_visible': visible,
+                                  'restaurant_ids': cat.restaurantIds,
+                                },
+                              ));
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.blue),
+                            onPressed: () => _showCategoryForm(context, state.restaurants, category: cat),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => _showDeleteConfirmation(context, () {
+                              _adminBloc.add(DeleteCategoryEvent(cat.id));
+                            }),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                }
+
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    leading: const Icon(Icons.category_rounded, color: AppColors.primary),
-                    title: Text(cat.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _showDeleteConfirmation(context, () {
-                        // In simulation just pop a message
-                      }),
-                    ),
-                  ),
+                  elevation: 1,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: buildCardContent(),
                 );
               },
             ),
@@ -1089,74 +1742,493 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
+  void _showCategoryForm(BuildContext context, List<RestaurantEntity> restaurants, {CategoryEntity? category}) {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController(text: category?.name ?? '');
+    String? imageUrl = category?.imageUrl;
+    bool isVisible = category?.isVisible ?? true;
+    List<int> selectedRestaurantIds = List<int>.from(category?.restaurantIds ?? []);
+
+    final categoryPresetImages = [
+      {'name': 'Fast Food', 'url': 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=600'},
+      {'name': 'Bakery', 'url': 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600'},
+      {'name': 'Asian Dishes', 'url': 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=600'},
+      {'name': 'Drinks', 'url': 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=600'},
+    ];
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setStateBuilder) {
+            return AlertDialog(
+              title: Text(category == null ? 'Add Category' : 'Edit Category'),
+              content: SizedBox(
+                width: 500,
+                child: Form(
+                  key: formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextFormField(
+                          controller: nameController,
+                          decoration: const InputDecoration(labelText: 'Name'),
+                          validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                        ),
+                        const SizedBox(height: 16),
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text('Category Image', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                        const SizedBox(height: 8),
+                        imageUrl != null
+                            ? Container(
+                                height: 120,
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  image: DecorationImage(image: NetworkImage(imageUrl!), fit: BoxFit.cover),
+                                ),
+                              )
+                            : Container(
+                                height: 120,
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(Icons.category, size: 40),
+                              ),
+                        TextButton.icon(
+                          onPressed: () {
+                            _showImageSelector(context, categoryPresetImages, (url) {
+                              setStateBuilder(() => imageUrl = url);
+                            });
+                          },
+                          icon: const Icon(Icons.photo),
+                          label: const Text('Select Photo'),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Visible on App Home'),
+                            Switch(
+                              value: isVisible,
+                              onChanged: (val) => setStateBuilder(() => isVisible = val),
+                            )
+                          ],
+                        ),
+                        const Divider(height: 24),
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text('Assign Restaurants to Category', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                        const SizedBox(height: 8),
+                        restaurants.isEmpty
+                            ? const Text('No restaurants registered to assign.')
+                            : ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: restaurants.length,
+                                itemBuilder: (context, index) {
+                                  final r = restaurants[index];
+                                  final checked = selectedRestaurantIds.contains(r.id);
+                                  return CheckboxListTile(
+                                    title: Text(r.name),
+                                    value: checked,
+                                    onChanged: (val) {
+                                      setStateBuilder(() {
+                                        if (val == true) {
+                                          selectedRestaurantIds.add(r.id);
+                                        } else {
+                                          selectedRestaurantIds.remove(r.id);
+                                        }
+                                      });
+                                    },
+                                  );
+                                },
+                              ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+                ),
+                TextButton(
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      final data = {
+                        'name': nameController.text,
+                        'image_url': imageUrl,
+                        'is_visible': isVisible,
+                        'restaurant_ids': selectedRestaurantIds,
+                      };
+                      if (category == null) {
+                        _adminBloc.add(CreateCategoryEvent(data));
+                      } else {
+                        _adminBloc.add(UpdateCategoryEvent(id: category.id, data: data));
+                      }
+                      Navigator.pop(ctx);
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   // -------------------------------------------------------------
   // TAB 5: USERS MANAGEMENT
   // -------------------------------------------------------------
+  String _userSearchQuery = '';
+
   Widget _buildUsersView(AdminLoaded state) {
+    final filteredUsers = state.users.where((u) {
+      return u.name.toLowerCase().contains(_userSearchQuery.toLowerCase()) ||
+          u.email.toLowerCase().contains(_userSearchQuery.toLowerCase());
+    }).toList();
+
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Platform Users', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Platform Users', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              if (MediaQuery.of(context).size.width >= 800)
+                ElevatedButton.icon(
+                  onPressed: () => _showUserForm(context),
+                  icon: const Icon(Icons.person_add_rounded, color: Colors.white),
+                  label: const Text('Add User', style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            decoration: InputDecoration(
+              hintText: 'Search users by name or email...',
+              prefixIcon: const Icon(Icons.search),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            ),
+            onChanged: (v) => setState(() => _userSearchQuery = v),
+          ),
           const SizedBox(height: 24),
           Expanded(
-            child: ListView.builder(
-              itemCount: state.users.length,
-              itemBuilder: (context, index) {
-                final user = state.users[index];
-                final isSelf = sl<SessionManager>().currentUser?.id == user.id;
+            child: filteredUsers.isEmpty
+                ? const Center(child: Text('No users matching the query.'))
+                : ListView.builder(
+                    itemCount: filteredUsers.length,
+                    itemBuilder: (context, index) {
+                      final user = filteredUsers[index];
+                      final isSelf = sl<SessionManager>().currentUser?.id == user.id;
+                      final isMobile = MediaQuery.of(context).size.width < 600;
 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: user.isAdmin ? AppColors.primary : Colors.grey[300],
-                      child: Icon(Icons.person, color: user.isAdmin ? Colors.white : Colors.black87),
-                    ),
-                    title: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('${user.email} | Role: ${user.isAdmin ? 'Admin' : 'Customer'}'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (!isSelf) ...[
-                          TextButton(
-                            onPressed: () {
-                              _adminBloc.add(UpdateUserEvent(
-                                id: user.id,
-                                data: {'is_admin': !user.isAdmin},
-                              ));
-                            },
-                            child: Text(user.isAdmin ? 'Revoke Admin' : 'Make Admin'),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.block, color: Colors.orange),
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('${user.name} has been blocked successfully!')),
-                              );
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _showDeleteConfirmation(context, () {
-                              _adminBloc.add(DeleteUserEvent(user.id));
-                            }),
-                          ),
-                        ] else
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16),
-                            child: Text('(You)', style: TextStyle(color: AppColors.textSecondary, fontStyle: FontStyle.italic)),
-                          ),
-                      ],
-                    ),
+                      Widget buildCardContent() {
+                        final leadingWidget = CircleAvatar(
+                          backgroundColor: user.isAdmin ? AppColors.primary : Colors.grey[300],
+                          child: Icon(Icons.person, color: user.isAdmin ? Colors.white : Colors.black87),
+                        );
+                        final titleRowWidget = Row(
+                          children: [
+                            Expanded(child: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold))),
+                            if (user.isBlocked) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: const BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.all(Radius.circular(8))),
+                                child: const Text('Blocked', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ],
+                        );
+                        final subtitleWidget = Text('${user.email} | Role: ${user.isAdmin ? 'Admin' : 'Customer'}');
+
+                        if (isMobile) {
+                          return Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    leadingWidget,
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          titleRowWidget,
+                                          const SizedBox(height: 4),
+                                          subtitleWidget,
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Divider(height: 24),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    if (!isSelf)
+                                      Row(
+                                        children: [
+                                          const Text('Active', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                                          const SizedBox(width: 8),
+                                          SizedBox(
+                                            height: 30,
+                                            child: Switch(
+                                              value: !user.isBlocked,
+                                              activeThumbColor: Colors.green,
+                                              inactiveThumbColor: Colors.red,
+                                              inactiveTrackColor: Colors.red[200],
+                                              onChanged: (active) {
+                                                _showBlockConfirmation(context, user.name, !active, () {
+                                                  _adminBloc.add(UpdateUserEvent(
+                                                    id: user.id,
+                                                    data: {'is_blocked': !active},
+                                                  ));
+                                                });
+                                              },
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    else
+                                      const Text('(You)', style: TextStyle(color: AppColors.textSecondary, fontStyle: FontStyle.italic)),
+                                    Row(
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.info_outline, color: Colors.teal),
+                                          onPressed: () => _showUserDetails(context, user),
+                                        ),
+                                        if (!isSelf) ...[
+                                          IconButton(
+                                            icon: const Icon(Icons.edit, color: Colors.blue),
+                                            onPressed: () => _showUserForm(context, user: user),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.delete, color: Colors.red),
+                                            onPressed: () => _showDeleteConfirmation(context, () {
+                                              _adminBloc.add(DeleteUserEvent(user.id));
+                                            }),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        } else {
+                          return ListTile(
+                            leading: leadingWidget,
+                            title: titleRowWidget,
+                            subtitle: subtitleWidget,
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.info_outline, color: Colors.teal),
+                                  onPressed: () => _showUserDetails(context, user),
+                                ),
+                                if (!isSelf) ...[
+                                  Switch(
+                                    value: !user.isBlocked,
+                                    activeThumbColor: Colors.green,
+                                    inactiveThumbColor: Colors.red,
+                                    inactiveTrackColor: Colors.red[200],
+                                    onChanged: (active) {
+                                      _showBlockConfirmation(context, user.name, !active, () {
+                                        _adminBloc.add(UpdateUserEvent(
+                                          id: user.id,
+                                          data: {'is_blocked': !active},
+                                        ));
+                                      });
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, color: Colors.blue),
+                                    onPressed: () => _showUserForm(context, user: user),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () => _showDeleteConfirmation(context, () {
+                                      _adminBloc.add(DeleteUserEvent(user.id));
+                                    }),
+                                  ),
+                                ] else
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 16),
+                                    child: Text('(You)', style: TextStyle(color: AppColors.textSecondary, fontStyle: FontStyle.italic)),
+                                  ),
+                              ],
+                            ),
+                          );
+                        }
+                      }
+
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        elevation: 1,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        child: buildCardContent(),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           )
         ],
       ),
+    );
+  }
+
+  void _showUserDetails(BuildContext context, UserEntity user) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('User Profile Details'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Name: ${user.name}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('Email: ${user.email}'),
+            const SizedBox(height: 8),
+            Text('Admin Privileges: ${user.isAdmin ? "Yes" : "No"}'),
+            const SizedBox(height: 8),
+            Text('Account Status: ${user.isBlocked ? "Blocked" : "Active"}', style: TextStyle(color: user.isBlocked ? Colors.red : Colors.green, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
+  void _showBlockConfirmation(BuildContext context, String name, bool block, VoidCallback onConfirm) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(block ? 'Block User' : 'Unblock User'),
+        content: Text('Are you sure you want to ${block ? "block" : "unblock"} user "$name"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              onConfirm();
+            },
+            child: Text(block ? 'Block' : 'Unblock', style: TextStyle(color: block ? Colors.red : Colors.green)),
+          )
+        ],
+      ),
+    );
+  }
+
+  void _showUserForm(BuildContext context, {UserEntity? user}) {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController(text: user?.name ?? '');
+    final emailController = TextEditingController(text: user?.email ?? '');
+    final passwordController = TextEditingController();
+    bool isAdmin = user?.isAdmin ?? false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setStateBuilder) {
+            return AlertDialog(
+              title: Text(user == null ? 'Add User' : 'Edit User Details'),
+              content: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: nameController,
+                        decoration: const InputDecoration(labelText: 'Name'),
+                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                      ),
+                      TextFormField(
+                        controller: emailController,
+                        decoration: const InputDecoration(labelText: 'Email'),
+                        validator: (v) => v == null || !v.contains('@') ? 'Invalid email' : null,
+                      ),
+                      if (user == null)
+                        TextFormField(
+                          controller: passwordController,
+                          decoration: const InputDecoration(labelText: 'Password'),
+                          obscureText: true,
+                          validator: (v) => v == null || v.length < 8 ? 'Password must be at least 8 chars' : null,
+                        ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Make Admin Privilege'),
+                          Switch(
+                            value: isAdmin,
+                            onChanged: (val) => setStateBuilder(() => isAdmin = val),
+                          )
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+                ),
+                TextButton(
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      if (user == null) {
+                        final data = {
+                          'name': nameController.text,
+                          'email': emailController.text,
+                          'password': passwordController.text,
+                          'is_admin': isAdmin,
+                        };
+                        _adminBloc.add(CreateUserEvent(data));
+                      } else {
+                        final data = {
+                          'name': nameController.text,
+                          'email': emailController.text,
+                          'is_admin': isAdmin,
+                        };
+                        _adminBloc.add(UpdateUserEvent(id: user.id, data: data));
+                      }
+                      Navigator.pop(ctx);
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -1164,9 +2236,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   // TAB 6: DELIVERY DRIVERS
   // -------------------------------------------------------------
   Widget _buildDriversView(AdminLoaded state) {
-    final nameController = TextEditingController();
-    final phoneController = TextEditingController();
-
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -1175,45 +2244,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Delivery Drivers', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              ElevatedButton.icon(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: const Text('Add Driver'),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Name')),
-                          TextField(controller: phoneController, decoration: const InputDecoration(labelText: 'Phone')),
-                        ],
-                      ),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-                        TextButton(
-                          onPressed: () {
-                            if (nameController.text.isNotEmpty) {
-                              final updatedList = List<Map<String, dynamic>>.from(state.drivers)
-                                ..add({
-                                  'id': (state.drivers.length + 1).toString(),
-                                  'name': nameController.text,
-                                  'phone': phoneController.text,
-                                  'status': 'available',
-                                });
-                              _adminBloc.add(SaveDriversEvent(updatedList));
-                              Navigator.pop(ctx);
-                            }
-                          },
-                          child: const Text('Save'),
-                        )
-                      ],
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.add, color: Colors.white),
-                label: const Text('Add Driver', style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-              ),
+              if (MediaQuery.of(context).size.width >= 800)
+                ElevatedButton.icon(
+                  onPressed: () => _showDriverForm(context, state.drivers),
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  label: const Text('Add Driver', style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                ),
             ],
           ),
           const SizedBox(height: 24),
@@ -1222,27 +2259,254 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               itemCount: state.drivers.length,
               itemBuilder: (context, index) {
                 final d = state.drivers[index];
+                final isBlocked = d['is_blocked'] ?? false;
+                final isMobile = MediaQuery.of(context).size.width < 600;
+
+                Widget buildCardContent() {
+                  const leadingWidget = Icon(Icons.delivery_dining_rounded, color: AppColors.primary, size: 32);
+                  final titleRowWidget = Row(
+                    children: [
+                      Expanded(child: Text(d['name'], style: const TextStyle(fontWeight: FontWeight.bold))),
+                      if (isBlocked) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: const BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.all(Radius.circular(8))),
+                          child: const Text('Blocked', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ],
+                  );
+                  final subtitleWidget = Text('Phone: ${d['phone']} | Status: ${d['status']}');
+
+                  if (isMobile) {
+                    return Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              leadingWidget,
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    titleRowWidget,
+                                    const SizedBox(height: 4),
+                                    subtitleWidget,
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const Divider(height: 24),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  const Text('Active', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                    height: 30,
+                                    child: Switch(
+                                      value: !isBlocked,
+                                      activeThumbColor: Colors.green,
+                                      inactiveThumbColor: Colors.red,
+                                      inactiveTrackColor: Colors.red[200],
+                                      onChanged: (active) {
+                                        final updatedList = List<Map<String, dynamic>>.from(state.drivers);
+                                        final idx = updatedList.indexWhere((driver) => driver['id'].toString() == d['id'].toString());
+                                        if (idx != -1) {
+                                          updatedList[idx] = Map<String, dynamic>.from(updatedList[idx])..['is_blocked'] = !active;
+                                          _adminBloc.add(SaveDriversEvent(updatedList));
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.info_outline, color: Colors.teal),
+                                    onPressed: () => _showDriverDetails(context, d),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, color: Colors.blue),
+                                    onPressed: () => _showDriverForm(context, state.drivers, driver: d),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () => _showDeleteConfirmation(context, () {
+                                      final updatedList = List<Map<String, dynamic>>.from(state.drivers)
+                                        ..removeWhere((driver) => driver['id'].toString() == d['id'].toString());
+                                      _adminBloc.add(SaveDriversEvent(updatedList));
+                                    }),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  } else {
+                    return ListTile(
+                      leading: leadingWidget,
+                      title: titleRowWidget,
+                      subtitle: subtitleWidget,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.info_outline, color: Colors.teal),
+                            onPressed: () => _showDriverDetails(context, d),
+                          ),
+                          Switch(
+                            value: !isBlocked,
+                            activeThumbColor: Colors.green,
+                            inactiveThumbColor: Colors.red,
+                            inactiveTrackColor: Colors.red[200],
+                            onChanged: (active) {
+                              final updatedList = List<Map<String, dynamic>>.from(state.drivers);
+                              final idx = updatedList.indexWhere((driver) => driver['id'].toString() == d['id'].toString());
+                              if (idx != -1) {
+                                updatedList[idx] = Map<String, dynamic>.from(updatedList[idx])..['is_blocked'] = !active;
+                                _adminBloc.add(SaveDriversEvent(updatedList));
+                              }
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.blue),
+                            onPressed: () => _showDriverForm(context, state.drivers, driver: d),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => _showDeleteConfirmation(context, () {
+                              final updatedList = List<Map<String, dynamic>>.from(state.drivers)
+                                ..removeWhere((driver) => driver['id'].toString() == d['id'].toString());
+                              _adminBloc.add(SaveDriversEvent(updatedList));
+                            }),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                }
+
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    leading: const Icon(Icons.delivery_dining_rounded, color: AppColors.primary, size: 32),
-                    title: Text(d['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('Phone: ${d['phone']} | Status: ${d['status']}'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _showDeleteConfirmation(context, () {
-                        final updatedList = List<Map<String, dynamic>>.from(state.drivers)
-                          ..removeWhere((driver) => driver['id'] == d['id']);
-                        _adminBloc.add(SaveDriversEvent(updatedList));
-                      }),
-                    ),
-                  ),
+                  elevation: 1,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: buildCardContent(),
                 );
               },
             ),
           )
         ],
       ),
+    );
+  }
+
+  void _showDriverDetails(BuildContext context, Map<String, dynamic> driver) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Driver Profile Details'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Name: ${driver['name']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('Phone: ${driver['phone']}'),
+            const SizedBox(height: 8),
+            Text('Status: ${driver['status']}'),
+            const SizedBox(height: 8),
+            Text('Driver Account Status: ${driver['is_blocked'] == true ? "Blocked" : "Active"}', style: TextStyle(color: driver['is_blocked'] == true ? Colors.red : Colors.green, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+        ],
+      ),
+    );
+  }
+
+  void _showDriverForm(BuildContext context, List<Map<String, dynamic>> currentDrivers, {Map<String, dynamic>? driver}) {
+    final nameController = TextEditingController(text: driver?.containsKey('name') == true ? driver!['name'] : '');
+    final phoneController = TextEditingController(text: driver?.containsKey('phone') == true ? driver!['phone'] : '');
+    String status = driver?.containsKey('status') == true ? driver!['status'] : 'available';
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setStateBuilder) {
+            return AlertDialog(
+              title: Text(driver == null ? 'Add Driver' : 'Edit Driver'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Name')),
+                  TextField(controller: phoneController, decoration: const InputDecoration(labelText: 'Phone')),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: 'Status'),
+                    initialValue: status,
+                    items: ['available', 'busy', 'offline'].map((s) => DropdownMenuItem(
+                          value: s,
+                          child: Text(s.toUpperCase()),
+                        )).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setStateBuilder(() => status = val);
+                      }
+                    },
+                  )
+                ],
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+                TextButton(
+                  onPressed: () {
+                    if (nameController.text.isNotEmpty) {
+                      final updatedList = List<Map<String, dynamic>>.from(currentDrivers);
+                      if (driver == null) {
+                        updatedList.add({
+                          'id': (updatedList.length + 1).toString(),
+                          'name': nameController.text,
+                          'phone': phoneController.text,
+                          'status': status,
+                          'is_blocked': false,
+                        });
+                      } else {
+                        final idx = updatedList.indexWhere((element) => element['id'].toString() == driver['id'].toString());
+                        if (idx != -1) {
+                          updatedList[idx] = {
+                            'id': driver['id'],
+                            'name': nameController.text,
+                            'phone': phoneController.text,
+                            'status': status,
+                            'is_blocked': driver['is_blocked'] ?? false,
+                          };
+                        }
+                      }
+                      _adminBloc.add(SaveDriversEvent(updatedList));
+                      Navigator.pop(ctx);
+                    }
+                  },
+                  child: const Text('Save'),
+                )
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -1257,8 +2521,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         children: [
           const Text('Analytics & Performance Reports', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 24),
-          // Simple visual chart mockup for revenue by day
+          // Revenue bar chart
           Card(
+            elevation: 1,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -1275,7 +2540,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: state.revenueByDay.entries.map((e) {
-                              // Calculate height relative to max revenue
                               final maxRevenue = state.revenueByDay.values.fold(0.0, (max, val) => val > max ? val : max);
                               final heightPct = maxRevenue > 0 ? e.value / maxRevenue : 0.0;
                               return Column(
@@ -1309,6 +2573,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           const SizedBox(height: 24),
           // Top Selling Meals Section
           Card(
+            elevation: 1,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -1366,6 +2631,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           const Text('System Configurations', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 24),
           Card(
+            elevation: 1,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -1411,9 +2677,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                               'currency': currencyController.text,
                             });
                           _adminBloc.add(SaveSettingsEvent(updatedSettings));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Settings saved successfully!')),
-                          );
                         }
                       },
                       style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
@@ -1425,8 +2688,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             ),
           ),
           const SizedBox(height: 24),
-          // Broadcast Notification Section
           Card(
+            elevation: 1,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Padding(
               padding: const EdgeInsets.all(20),

@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import '../../../../core/constants/api_constants.dart';
 import '../../../../core/errors/exceptions.dart';
@@ -49,17 +51,35 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
 
   @override
   Future<List<CategoryModel>> getCategories() async {
-    // Mocking categories or deriving them from products
-    // For now, let's mock them for better UI control
-    await Future.delayed(const Duration(milliseconds: 500));
-    return [
-      const CategoryModel(id: 'All', name: 'All', imageUrl: null),
-      const CategoryModel(id: 'Broast', name: 'Broast', imageUrl: null),
-      const CategoryModel(id: 'Burgers', name: 'Burgers', imageUrl: null),
-      const CategoryModel(id: 'Pizza', name: 'Pizza', imageUrl: null),
-      const CategoryModel(id: 'Pasta', name: 'Pasta', imageUrl: null),
-      const CategoryModel(id: 'Sides', name: 'Sides', imageUrl: null),
-    ];
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final data = prefs.getString('admin_categories');
+      List<CategoryModel> categories = [];
+      if (data != null) {
+        final List list = jsonDecode(data);
+        categories = list.map((json) => CategoryModel.fromJson(Map<String, dynamic>.from(json))).toList();
+      } else {
+        categories = [
+          const CategoryModel(id: 'Broast', name: 'Broast', imageUrl: 'https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=600', isVisible: true, restaurantIds: [1, 2, 3]),
+          const CategoryModel(id: 'Burgers', name: 'Burgers', imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600', isVisible: true, restaurantIds: [1, 2, 3]),
+          const CategoryModel(id: 'Pizza', name: 'Pizza', imageUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600', isVisible: true, restaurantIds: [1, 2]),
+          const CategoryModel(id: 'Pasta', name: 'Pasta', imageUrl: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600', isVisible: true, restaurantIds: [2, 3]),
+          const CategoryModel(id: 'Sides', name: 'Sides', imageUrl: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600', isVisible: true, restaurantIds: [3]),
+        ];
+        await prefs.setString('admin_categories', jsonEncode(categories.map((c) => c.toJson()).toList()));
+      }
+
+      final visibleCategories = categories.where((c) => c.isVisible).toList();
+      return [
+        const CategoryModel(id: 'All', name: 'All', imageUrl: null, isVisible: true, restaurantIds: []),
+        ...visibleCategories,
+      ];
+    } catch (e) {
+      debugPrint('Categories Fetch Error: $e');
+      return [
+        const CategoryModel(id: 'All', name: 'All', imageUrl: null, isVisible: true, restaurantIds: []),
+      ];
+    }
   }
 
   @override
@@ -88,7 +108,25 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
           return [];
         }
         final List list = data['items'];
-        return list.map((json) => RestaurantModel.fromJson(json)).toList();
+        final restaurants = list.map((json) => RestaurantModel.fromJson(json)).toList();
+
+        // Client-side category restaurant filtering if categoryId is specific and not 'All'
+        if (categoryId != null && categoryId != 'All') {
+          final prefs = await SharedPreferences.getInstance();
+          final categoryData = prefs.getString('admin_categories');
+          if (categoryData != null) {
+            final List catsList = jsonDecode(categoryData);
+            final categories = catsList.map((json) => CategoryModel.fromJson(Map<String, dynamic>.from(json))).toList();
+            final matchedCat = categories.cast<CategoryModel?>().firstWhere(
+              (c) => c?.id == categoryId,
+              orElse: () => null,
+            );
+            if (matchedCat != null && matchedCat.restaurantIds.isNotEmpty) {
+              return restaurants.where((r) => matchedCat.restaurantIds.contains(r.id)).toList();
+            }
+          }
+        }
+        return restaurants;
       } else {
         throw ServerException(response.data['message'] ?? 'Failed to fetch restaurants');
       }

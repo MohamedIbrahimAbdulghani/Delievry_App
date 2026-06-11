@@ -5,6 +5,7 @@ import '../../../../core/errors/failures.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../home/domain/entities/restaurant_entity.dart';
 import '../../../home/domain/entities/meal_entity.dart';
+import '../../../home/domain/entities/category_entity.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../domain/repositories/admin_repository.dart';
 import 'admin_event.dart';
@@ -17,14 +18,29 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
   AdminBloc({required this.repository}) : super(AdminInitial()) {
     on<FetchAdminData>(_onFetchAdminData);
     on<UpdateOrderStatusEvent>(_onUpdateOrderStatus);
+    on<AssignDriverEvent>(_onAssignDriver);
+    
+    // Restaurants
     on<CreateRestaurantEvent>(_onCreateRestaurant);
     on<UpdateRestaurantEvent>(_onUpdateRestaurant);
     on<DeleteRestaurantEvent>(_onDeleteRestaurant);
+    
+    // Meals
     on<CreateMealEvent>(_onCreateMeal);
     on<UpdateMealEvent>(_onUpdateMeal);
     on<DeleteMealEvent>(_onDeleteMeal);
+    
+    // Categories
+    on<CreateCategoryEvent>(_onCreateCategory);
+    on<UpdateCategoryEvent>(_onUpdateCategory);
+    on<DeleteCategoryEvent>(_onDeleteCategory);
+    
+    // Users
+    on<CreateUserEvent>(_onCreateUser);
     on<UpdateUserEvent>(_onUpdateUser);
     on<DeleteUserEvent>(_onDeleteUser);
+    
+    // System
     on<SaveSettingsEvent>(_onSaveSettings);
     on<SaveDriversEvent>(_onSaveDrivers);
   }
@@ -64,6 +80,15 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     );
   }
 
+  Future<void> _onAssignDriver(AssignDriverEvent event, Emitter<AdminState> emit) async {
+    await _handleCrudAction(
+      action: () => repository.assignDriver(event.orderId, event.driverId),
+      successMessage: 'Driver assigned successfully',
+      emit: emit,
+    );
+  }
+
+  // Restaurants
   Future<void> _onCreateRestaurant(CreateRestaurantEvent event, Emitter<AdminState> emit) async {
     await _handleCrudAction(
       action: () => repository.createRestaurant(event.data),
@@ -88,6 +113,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     );
   }
 
+  // Meals
   Future<void> _onCreateMeal(CreateMealEvent event, Emitter<AdminState> emit) async {
     await _handleCrudAction(
       action: () => repository.createMeal(event.data),
@@ -112,10 +138,44 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     );
   }
 
+  // Categories
+  Future<void> _onCreateCategory(CreateCategoryEvent event, Emitter<AdminState> emit) async {
+    await _handleCrudAction(
+      action: () => repository.createCategory(event.data),
+      successMessage: 'Category created successfully',
+      emit: emit,
+    );
+  }
+
+  Future<void> _onUpdateCategory(UpdateCategoryEvent event, Emitter<AdminState> emit) async {
+    await _handleCrudAction(
+      action: () => repository.updateCategory(event.id, event.data),
+      successMessage: 'Category updated successfully',
+      emit: emit,
+    );
+  }
+
+  Future<void> _onDeleteCategory(DeleteCategoryEvent event, Emitter<AdminState> emit) async {
+    await _handleCrudAction(
+      action: () => repository.deleteCategory(event.id),
+      successMessage: 'Category deleted successfully',
+      emit: emit,
+    );
+  }
+
+  // Users
+  Future<void> _onCreateUser(CreateUserEvent event, Emitter<AdminState> emit) async {
+    await _handleCrudAction(
+      action: () => repository.createUser(event.data),
+      successMessage: 'User created successfully',
+      emit: emit,
+    );
+  }
+
   Future<void> _onUpdateUser(UpdateUserEvent event, Emitter<AdminState> emit) async {
     await _handleCrudAction(
       action: () => repository.updateUser(event.id, event.data),
-      successMessage: 'User role updated successfully',
+      successMessage: 'User updated successfully',
       emit: emit,
     );
   }
@@ -128,6 +188,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     );
   }
 
+  // System Settings
   Future<void> _onSaveSettings(SaveSettingsEvent event, Emitter<AdminState> emit) async {
     await _handleCrudAction(
       action: () => repository.saveSettings(event.settings),
@@ -136,6 +197,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     );
   }
 
+  // Drivers
   Future<void> _onSaveDrivers(SaveDriversEvent event, Emitter<AdminState> emit) async {
     await _handleCrudAction(
       action: () => repository.saveDrivers(event.drivers),
@@ -152,6 +214,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
       repository.getAllUsers(),
       repository.getDrivers(),
       repository.getSettings(),
+      repository.getAllCategories(),
     ]);
 
     final ordersRes = results[0] as Either<Failure, List<OrderEntity>>;
@@ -160,6 +223,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     final usersRes = results[3] as Either<Failure, List<UserEntity>>;
     final driversRes = results[4] as Either<Failure, List<Map<String, dynamic>>>;
     final settingsRes = results[5] as Either<Failure, Map<String, dynamic>>;
+    final categoriesRes = results[6] as Either<Failure, List<CategoryEntity>>;
 
     String? errorMessage;
     List<OrderEntity>? orders;
@@ -168,6 +232,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     List<UserEntity>? users;
     List<Map<String, dynamic>>? drivers;
     Map<String, dynamic>? settings;
+    List<CategoryEntity>? categories;
 
     ordersRes.fold((f) => errorMessage = f.message, (v) => orders = v);
     restaurantsRes.fold((f) => errorMessage = f.message, (v) => restaurants = v);
@@ -175,6 +240,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     usersRes.fold((f) => errorMessage = f.message, (v) => users = v);
     driversRes.fold((f) => errorMessage = f.message, (v) => drivers = v);
     settingsRes.fold((f) => errorMessage = f.message, (v) => settings = v);
+    categoriesRes.fold((f) => errorMessage = f.message, (v) => categories = v);
 
     if (errorMessage != null) {
       emit(AdminError(errorMessage!));
@@ -184,6 +250,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
       final totalRestaurants = restaurants!.length;
       final totalMeals = meals!.length;
       final totalUsers = users!.length;
+      final totalCategories = categories!.length;
 
       // 2. Revenue (sum of total for delivered orders)
       double totalRevenue = 0.0;
@@ -251,12 +318,14 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
         orders: orders!,
         restaurants: restaurants!,
         meals: meals!,
+        categories: categories!,
         users: users!,
         drivers: drivers!,
         settings: settings!,
         totalOrders: totalOrders,
         totalRestaurants: totalRestaurants,
         totalMeals: totalMeals,
+        totalCategories: totalCategories,
         totalUsers: totalUsers,
         totalRevenue: totalRevenue,
         recentOrders: recentOrdersCapped,

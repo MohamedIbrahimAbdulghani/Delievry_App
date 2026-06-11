@@ -62,11 +62,21 @@ class OrderModel extends OrderEntity {
       case 'preparing':
       case 'processing':
         return OrderStatus.preparing;
+      case 'accepted':
+        return OrderStatus.accepted;
+      case 'heading_to_restaurant':
+        return OrderStatus.heading_to_restaurant;
+      case 'picked_up':
+        return OrderStatus.picked_up;
+      case 'on_the_way':
+        return OrderStatus.on_the_way;
       case 'out_for_delivery':
         return OrderStatus.out_for_delivery;
       case 'delivered':
       case 'completed':
         return OrderStatus.delivered;
+      case 'failed':
+        return OrderStatus.failed;
       case 'cancelled':
         return OrderStatus.cancelled;
       default:

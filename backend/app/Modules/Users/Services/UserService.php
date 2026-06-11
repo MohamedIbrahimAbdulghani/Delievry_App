@@ -27,6 +27,18 @@ class UserService
         );
     }
 
+    public function create(array $data): UserResource
+    {
+        $user = User::query()->create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => $data['password'],
+            'is_admin' => $data['is_admin'] ?? false,
+        ]);
+
+        return new UserResource($user);
+    }
+
     public function update(User $target, User $actor, array $data): UserResource
     {
         if (array_key_exists('is_admin', $data) && ! $actor->is_admin) {

@@ -17,9 +17,19 @@ class Order extends Model
 
     public const STATUS_PREPARING = 'preparing';
 
+    public const STATUS_ACCEPTED = 'accepted';
+
+    public const STATUS_HEADING_TO_RESTAURANT = 'heading_to_restaurant';
+
+    public const STATUS_PICKED_UP = 'picked_up';
+
+    public const STATUS_ON_THE_WAY = 'on_the_way';
+
     public const STATUS_OUT_FOR_DELIVERY = 'out_for_delivery';
 
     public const STATUS_DELIVERED = 'delivered';
+
+    public const STATUS_FAILED = 'failed';
 
     public const STATUS_CANCELLED = 'cancelled';
 
@@ -28,14 +38,20 @@ class Order extends Model
         self::STATUS_PENDING,
         self::STATUS_CONFIRMED,
         self::STATUS_PREPARING,
+        self::STATUS_ACCEPTED,
+        self::STATUS_HEADING_TO_RESTAURANT,
+        self::STATUS_PICKED_UP,
+        self::STATUS_ON_THE_WAY,
         self::STATUS_OUT_FOR_DELIVERY,
         self::STATUS_DELIVERED,
+        self::STATUS_FAILED,
         self::STATUS_CANCELLED,
     ];
 
     protected $fillable = [
         'user_id',
         'restaurant_id',
+        'driver_id',
         'status',
         'delivery_address',
         'notes',
@@ -60,6 +76,11 @@ class Order extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function driver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'driver_id');
     }
 
     public function restaurant(): BelongsTo

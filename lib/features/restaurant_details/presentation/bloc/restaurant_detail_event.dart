@@ -22,3 +22,12 @@ class ToggleFavorite extends RestaurantDetailEvent {
   @override
   List<Object?> get props => [id];
 }
+
+class UpdateRestaurantFavoriteStatus extends RestaurantDetailEvent {
+  final int restaurantId;
+  final bool isFavorite;
+  const UpdateRestaurantFavoriteStatus(this.restaurantId, this.isFavorite);
+
+  @override
+  List<Object?> get props => [restaurantId, isFavorite];
+}

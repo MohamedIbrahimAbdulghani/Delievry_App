@@ -75,4 +75,79 @@ class OrderController extends Controller
 
         return ApiResponse::success(new OrderResource($order), __('Order location updated.'));
     }
+
+    public function assignDriver(Request $request, Order $order): JsonResponse
+    {
+        $request->validate([
+            'driver_id' => 'required|exists:users,id',
+        ]);
+
+        $driver = \App\Models\User::findOrFail($request->driver_id);
+        if ($driver->role !== 'delivery') {
+            return ApiResponse::error(__('User is not a delivery driver.'), [], 422);
+        }
+
+        $order->update([
+            'driver_id' => $request->driver_id,
+        ]);
+
+        return ApiResponse::success(new OrderResource($order->load(['items', 'restaurant', 'driver'])), __('Driver assigned to order.'));
+    }
+
+    public function earnings(Request $request): JsonResponse
+    {
+        $driver = $request->user();
+        
+        $allDelivered = Order::where('driver_id', $driver->id)
+            ->where('status', Order::STATUS_DELIVERED)
+            ->get();
+
+        $todayDelivered = Order::where('driver_id', $driver->id)
+            ->where('status', Order::STATUS_DELIVERED)
+            ->whereDate('placed_at', today())
+            ->get();
+
+        $startOfWeek = now()->startOfWeek();
+        $weekDelivered = Order::where('driver_id', $driver->id)
+            ->where('status', Order::STATUS_DELIVERED)
+            ->where('placed_at', '>=', $startOfWeek)
+            ->get();
+
+        $startOfMonth = now()->startOfMonth();
+        $monthDelivered = Order::where('driver_id', $driver->id)
+            ->where('status', Order::STATUS_DELIVERED)
+            ->where('placed_at', '>=', $startOfMonth)
+            ->get();
+
+        $data = [
+            'today_deliveries' => $todayDelivered->count(),
+            'today_earnings' => (double) $todayDelivered->sum('delivery_fee'),
+            'weekly_deliveries' => $weekDelivered->count(),
+            'weekly_earnings' => (double) $weekDelivered->sum('delivery_fee'),
+            'monthly_deliveries' => $monthDelivered->count(),
+            'monthly_earnings' => (double) $monthDelivered->sum('delivery_fee'),
+            'total_deliveries' => $allDelivered->count(),
+            'total_earnings' => (double) $allDelivered->sum('delivery_fee'),
+        ];
+
+        return ApiResponse::success($data);
+    }
+
+    public function history(Request $request): JsonResponse
+    {
+        $driver = $request->user();
+        $list = ListQuery::fromRequest($request, ['id', 'status', 'total', 'created_at', 'placed_at'], 'id');
+
+        $paginator = Order::where('driver_id', $driver->id)
+            ->whereIn('status', [Order::STATUS_DELIVERED, Order::STATUS_FAILED, Order::STATUS_CANCELLED])
+            ->orderBy($list->sort, $list->direction)
+            ->paginate($list->perPage, ['*'], 'page', $list->page);
+
+        $data = \App\Support\Pagination\PaginationPresenter::wrap(
+            $paginator,
+            OrderResource::collection($paginator->items())->resolve(),
+        );
+
+        return ApiResponse::success($data);
+    }
 }

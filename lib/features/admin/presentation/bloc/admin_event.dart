@@ -111,3 +111,50 @@ class SaveDriversEvent extends AdminEvent {
   @override
   List<Object?> get props => [drivers];
 }
+
+class CreateCategoryEvent extends AdminEvent {
+  final Map<String, dynamic> data;
+
+  const CreateCategoryEvent(this.data);
+
+  @override
+  List<Object?> get props => [data];
+}
+
+class UpdateCategoryEvent extends AdminEvent {
+  final String id;
+  final Map<String, dynamic> data;
+
+  const UpdateCategoryEvent({required this.id, required this.data});
+
+  @override
+  List<Object?> get props => [id, data];
+}
+
+class DeleteCategoryEvent extends AdminEvent {
+  final String id;
+
+  const DeleteCategoryEvent(this.id);
+
+  @override
+  List<Object?> get props => [id];
+}
+
+class CreateUserEvent extends AdminEvent {
+  final Map<String, dynamic> data;
+
+  const CreateUserEvent(this.data);
+
+  @override
+  List<Object?> get props => [data];
+}
+
+class AssignDriverEvent extends AdminEvent {
+  final int orderId;
+  final int driverId;
+
+  const AssignDriverEvent({required this.orderId, required this.driverId});
+
+  @override
+  List<Object?> get props => [orderId, driverId];
+}

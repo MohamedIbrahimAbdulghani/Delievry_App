@@ -12,4 +12,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus']);
+    Route::patch('/orders/{order}/assign', [OrderController::class, 'assignDriver']);
+});
+
+Route::middleware(['auth:sanctum', 'delivery'])->prefix('delivery')->group(function () {
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::patch('/orders/{order}/status', [OrderController::class, 'updateStatus']);
+    Route::patch('/orders/{order}/location', [OrderController::class, 'updateLocation']);
+    Route::post('/availability', [\App\Modules\Users\Http\Controllers\UserController::class, 'toggleAvailability']);
+    Route::get('/earnings', [OrderController::class, 'earnings']);
+    Route::get('/history', [OrderController::class, 'history']);
 });

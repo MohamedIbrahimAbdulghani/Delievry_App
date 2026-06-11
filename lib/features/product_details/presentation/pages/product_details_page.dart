@@ -38,11 +38,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (context) => _bloc),
-        BlocProvider(create: (context) => sl<CartBloc>()),
-      ],
+    return BlocProvider(
+      create: (context) => _bloc,
       child: Scaffold(
         backgroundColor: Colors.white,
         body: BlocBuilder<ProductDetailBloc, ProductDetailState>(

@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../cart/presentation/bloc/cart_bloc.dart';
+import '../../../cart/presentation/bloc/cart_event.dart';
+import '../../../cart/presentation/bloc/cart_state.dart';
+import '../../../cart/domain/entities/cart_item_entity.dart';
 import '../../domain/entities/restaurant_detail_entity.dart';
 
 class RestaurantMenuTabs extends StatelessWidget {
@@ -77,13 +82,96 @@ class RestaurantMenuTabs extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    '\$${product.price.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '\$${product.price.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      BlocBuilder<CartBloc, CartState>(
+                        builder: (context, state) {
+                          CartItemEntity? cartItem;
+                          if (state is CartLoaded) {
+                            for (var item in state.cart.items) {
+                              if (item.product.id == product.id) {
+                                cartItem = item;
+                                break;
+                              }
+                            }
+                          }
+
+                          if (cartItem == null || cartItem.quantity == 0) {
+                            return GestureDetector(
+                              onTap: () {}, // Swallow taps to prevent navigation
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  minimumSize: const Size(60, 32),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                onPressed: () {
+                                  context.read<CartBloc>().add(AddItemToCart(productId: product.id, quantity: 1));
+                                },
+                                child: const Text('Add', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              ),
+                            );
+                          }
+
+                          final item = cartItem;
+                          return GestureDetector(
+                            onTap: () {}, // Swallow taps to prevent navigation
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: AppColors.primary.withAlpha(80)),
+                                borderRadius: BorderRadius.circular(8),
+                                color: AppColors.background,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                    padding: EdgeInsets.zero,
+                                    icon: const Icon(Icons.remove, size: 16, color: AppColors.primary),
+                                    onPressed: () {
+                                      context.read<CartBloc>().add(
+                                        UpdateItemQuantity(lineId: item.id, quantity: item.quantity - 1),
+                                      );
+                                    },
+                                  ),
+                                  Text(
+                                    '${item.quantity}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.onBackground,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                    padding: EdgeInsets.zero,
+                                    icon: const Icon(Icons.add, size: 16, color: AppColors.primary),
+                                    onPressed: () {
+                                      context.read<CartBloc>().add(
+                                        UpdateItemQuantity(lineId: item.id, quantity: item.quantity + 1),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),

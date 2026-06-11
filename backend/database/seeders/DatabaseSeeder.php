@@ -26,6 +26,16 @@ class DatabaseSeeder extends Seeder
             'email' => 'customer@broastmeshwar.test',
             'password' => 'password',
             'is_admin' => false,
+            'role' => 'customer',
+        ]);
+
+        $driver = User::query()->create([
+            'name' => 'Driver Captain',
+            'email' => 'driver@driver.com',
+            'password' => 'password',
+            'is_admin' => false,
+            'role' => 'delivery',
+            'is_online' => true,
         ]);
 
         $r1 = Restaurant::query()->create([
@@ -138,7 +148,7 @@ class DatabaseSeeder extends Seeder
             'image_url' => 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600&auto=format&fit=crop',
         ]);
 
-        $this->command?->info('Seeded users: admin@broastmeshwar.test / customer@broastmeshwar.test (password: password)');
-        $this->command?->info('Admin ID: '.$admin->id.' Customer ID: '.$customer->id);
+        $this->command?->info('Seeded users: Admin: admin@admin.com (admin123) | Customer: customer@broastmeshwar.test (password) | Driver: driver@driver.com (password)');
+        $this->command?->info('Admin ID: '.$admin->id.' Customer ID: '.$customer->id.' Driver ID: '.$driver->id);
     }
 }

@@ -23,9 +23,14 @@ import '../../features/favorites/presentation/pages/favorites_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/edit_profile_page.dart';
 import '../../features/profile/presentation/pages/address_management_page.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../features/cart/presentation/bloc/cart_bloc.dart';
+import '../../features/cart/presentation/bloc/cart_state.dart';
 import '../../di/injection_container.dart';
 import '../auth/session_manager.dart';
 import '../../features/admin/presentation/pages/admin_dashboard_page.dart';
+import '../../features/delivery/presentation/pages/delivery_dashboard_page.dart';
+import '../../features/delivery/presentation/pages/delivery_tracking_page.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/splash',
@@ -42,11 +47,30 @@ final appRouter = GoRouter(
         return '/home'; // Non-admins are redirected back to user home
       }
     }
+
+    // Check if user is trying to access delivery pages
+    if (matchedLocation.startsWith('/delivery')) {
+      if (!sessionManager.isAuthenticated) {
+        return '/login';
+      }
+      if (!sessionManager.isDelivery) {
+        return '/home'; // Non-delivery drivers are redirected back to user home
+      }
+    }
+
+    // Redirect delivery drivers away from customer pages
+    if (sessionManager.isAuthenticated && sessionManager.isDelivery) {
+      if (!matchedLocation.startsWith('/delivery') && matchedLocation != '/splash') {
+        return '/delivery/dashboard';
+      }
+    }
     
     // If user is already authenticated and tries to open login/register/splash/onboarding, redirect appropriately
     if (sessionManager.isAuthenticated && (matchedLocation == '/login' || matchedLocation == '/register' || matchedLocation == '/splash')) {
       if (sessionManager.isAdmin) {
         return '/admin/dashboard';
+      } else if (sessionManager.isDelivery) {
+        return '/delivery/dashboard';
       } else {
         return '/home';
       }
@@ -58,6 +82,17 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/admin/dashboard',
       builder: (context, state) => const AdminDashboardPage(),
+    ),
+    GoRoute(
+      path: '/delivery/dashboard',
+      builder: (context, state) => const DeliveryDashboardPage(),
+    ),
+    GoRoute(
+      path: '/delivery/tracking/:id',
+      builder: (context, state) {
+        final id = state.pathParameters['id']!;
+        return DeliveryTrackingPage(orderId: int.parse(id));
+      },
     ),
     GoRoute(
       path: '/splash',
@@ -220,28 +255,52 @@ class MainShellPage extends StatelessWidget {
         unselectedItemColor: AppColors.textSecondary,
         showSelectedLabels: true,
         showUnselectedLabels: true,
-        items: const [
-          BottomNavigationBarItem(
+        items: [
+          const BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
             activeIcon: Icon(Icons.home_rounded),
             label: 'Home',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.favorite_border_rounded),
             activeIcon: Icon(Icons.favorite_rounded),
             label: 'Favorites',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.receipt_long_outlined),
             activeIcon: Icon(Icons.receipt_long_rounded),
             label: 'Orders',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart_outlined),
-            activeIcon: Icon(Icons.shopping_cart_rounded),
+            icon: BlocBuilder<CartBloc, CartState>(
+              builder: (context, state) {
+                int count = 0;
+                if (state is CartLoaded) {
+                  count = state.cart.items.fold(0, (sum, item) => sum + item.quantity);
+                }
+                return Badge(
+                  label: Text('$count'),
+                  isLabelVisible: count > 0,
+                  child: const Icon(Icons.shopping_cart_outlined),
+                );
+              },
+            ),
+            activeIcon: BlocBuilder<CartBloc, CartState>(
+              builder: (context, state) {
+                int count = 0;
+                if (state is CartLoaded) {
+                  count = state.cart.items.fold(0, (sum, item) => sum + item.quantity);
+                }
+                return Badge(
+                  label: Text('$count'),
+                  isLabelVisible: count > 0,
+                  child: const Icon(Icons.shopping_cart_rounded),
+                );
+              },
+            ),
             label: 'Cart',
           ),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
             activeIcon: Icon(Icons.person_rounded),
             label: 'Profile',

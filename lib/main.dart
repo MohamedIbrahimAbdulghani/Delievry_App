@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
 import 'core/routing/navigation_helper.dart';
 import 'di/injection_container.dart' as di;
+import 'features/cart/presentation/bloc/cart_bloc.dart';
+import 'features/favorites/presentation/bloc/favorites_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,11 +19,21 @@ class DelievryApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'Delievry App',
-      theme: AppTheme.lightTheme,
-      routerConfig: appRouter,
-      debugShowCheckedModeBanner: false,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<CartBloc>(
+          create: (context) => di.sl<CartBloc>(),
+        ),
+        BlocProvider<FavoritesBloc>(
+          create: (context) => di.sl<FavoritesBloc>(),
+        ),
+      ],
+      child: MaterialApp.router(
+        title: 'Delievry App',
+        theme: AppTheme.lightTheme,
+        routerConfig: appRouter,
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }
