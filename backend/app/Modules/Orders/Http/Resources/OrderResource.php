@@ -28,6 +28,8 @@ class OrderResource extends JsonResource
             'total' => (string) $this->total,
             'latitude' => $this->latitude,
             'longitude' => $this->longitude,
+            'driver_latitude' => $this->driver_latitude,
+            'driver_longitude' => $this->driver_longitude,
             'placed_at' => $this->placed_at?->toIso8601String(),
             'restaurant' => $this->whenLoaded('restaurant', fn () => new RestaurantResource($this->restaurant)),
             'driver' => $this->whenLoaded('driver', fn () => new \App\Modules\Users\Http\Resources\UserResource($this->driver)),

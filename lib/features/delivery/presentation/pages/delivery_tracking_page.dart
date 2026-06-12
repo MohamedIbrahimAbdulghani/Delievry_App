@@ -23,6 +23,8 @@ class _DeliveryTrackingPageState extends State<DeliveryTrackingPage> {
   late DeliveryBloc _bloc;
   Timer? _locationTimer;
   double _animationStep = 0.0;
+  double? _customerLat;
+  double? _customerLng;
   
   // Default coordinates (SF fallback)
   final double defaultLat = 37.7749;
@@ -49,8 +51,12 @@ class _DeliveryTrackingPageState extends State<DeliveryTrackingPage> {
         final orderIndex = state.assignedOrders.indexWhere((o) => o.id == widget.orderId);
         if (orderIndex != -1) {
           final order = state.assignedOrders[orderIndex];
-          final double cLat = order.latitude ?? defaultLat;
-          final double cLng = order.longitude ?? defaultLng;
+          if (_customerLat == null) {
+            _customerLat = order.latitude ?? defaultLat;
+            _customerLng = order.longitude ?? defaultLng;
+          }
+          final double cLat = _customerLat!;
+          final double cLng = _customerLng!;
           final double rLat = cLat - 0.005;
           final double rLng = cLng - 0.005;
 
@@ -92,8 +98,12 @@ class _DeliveryTrackingPageState extends State<DeliveryTrackingPage> {
               }
               final order = state.assignedOrders[orderIndex];
 
-              final double cLat = order.latitude ?? defaultLat;
-              final double cLng = order.longitude ?? defaultLng;
+              if (_customerLat == null) {
+                _customerLat = order.latitude ?? defaultLat;
+                _customerLng = order.longitude ?? defaultLng;
+              }
+              final double cLat = _customerLat!;
+              final double cLng = _customerLng!;
               final double rLat = cLat - 0.005;
               final double rLng = cLng - 0.005;
 

@@ -10,9 +10,10 @@ class FetchOrders extends OrdersEvent {}
 
 class FetchOrderDetails extends OrdersEvent {
   final int id;
-  const FetchOrderDetails(this.id);
+  final bool showLoading;
+  const FetchOrderDetails(this.id, {this.showLoading = true});
   @override
-  List<Object?> get props => [id];
+  List<Object?> get props => [id, showLoading];
 }
 
 class ReorderEvent extends OrdersEvent {

@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
         $customer = User::query()->create([
             'name' => 'Customer',
             'email' => 'customer@broastmeshwar.test',
+            'phone' => '+1098765432',
             'password' => 'password',
             'is_admin' => false,
             'role' => 'customer',
@@ -32,6 +33,7 @@ class DatabaseSeeder extends Seeder
         $driver = User::query()->create([
             'name' => 'Driver Captain',
             'email' => 'driver@driver.com',
+            'phone' => '+1234567890',
             'password' => 'password',
             'is_admin' => false,
             'role' => 'delivery',

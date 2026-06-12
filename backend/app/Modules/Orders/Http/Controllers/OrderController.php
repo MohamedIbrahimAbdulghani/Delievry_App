@@ -47,7 +47,16 @@ class OrderController extends Controller
     {
         $this->authorize('view', $order);
 
-        return ApiResponse::success(new OrderResource($order->load(['items', 'restaurant', 'payments'])));
+        return ApiResponse::success(new OrderResource($order->load(['items', 'restaurant', 'payments', 'driver'])));
+    }
+
+    public function reorder(Order $order): JsonResponse
+    {
+        $this->authorize('view', $order);
+
+        $cart = $this->orderService->reorder($order, request()->user());
+
+        return ApiResponse::success($cart, __('Order recreated in cart.'));
     }
 
     public function updateStatus(UpdateOrderStatusRequest $request, Order $order): JsonResponse
@@ -69,11 +78,43 @@ class OrderController extends Controller
         $this->authorize('update', $order); // Assuming driver can update their own assigned orders
 
         $order->update([
-            'latitude' => $request->latitude,
-            'longitude' => $request->longitude,
+            'driver_latitude' => $request->latitude,
+            'driver_longitude' => $request->longitude,
         ]);
 
-        return ApiResponse::success(new OrderResource($order), __('Order location updated.'));
+        $driver = $request->user();
+        if ($driver && $driver->role === 'delivery') {
+            $driver->update([
+                'latitude' => $request->latitude,
+                'longitude' => $request->longitude,
+            ]);
+        }
+
+        $customerLat = $order->latitude;
+        $customerLng = $order->longitude;
+
+        if ($customerLat && $customerLng) {
+            $latDiff = abs($request->latitude - $customerLat);
+            $lngDiff = abs($request->longitude - $customerLng);
+
+            if ($latDiff <= 0.0005 && $lngDiff <= 0.0005) {
+                $exists = \App\Modules\Notifications\Models\Notification::where('user_id', $order->user_id)
+                    ->where('title', 'Order Arrived')
+                    ->where('body', 'like', "%Order #{$order->id}%")
+                    ->exists();
+
+                if (!$exists) {
+                    \App\Modules\Notifications\Models\Notification::create([
+                        'user_id' => $order->user_id,
+                        'title' => 'Order Arrived',
+                        'body' => "Your order #{$order->id} has arrived and is ready for pickup.",
+                        'is_read' => false,
+                    ]);
+                }
+            }
+        }
+
+        return ApiResponse::success(new OrderResource($order->load(['items', 'restaurant', 'payments', 'driver'])), __('Order location updated.'));
     }
 
     public function assignDriver(Request $request, Order $order): JsonResponse

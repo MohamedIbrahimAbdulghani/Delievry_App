@@ -28,6 +28,9 @@ import '../../features/cart/presentation/bloc/cart_bloc.dart';
 import '../../features/cart/presentation/bloc/cart_state.dart';
 import '../../di/injection_container.dart';
 import '../auth/session_manager.dart';
+import 'dart:async';
+import '../../features/notifications/domain/usecases/get_notifications_usecase.dart';
+import '../notifications/local_notification_manager.dart';
 import '../../features/admin/presentation/pages/admin_dashboard_page.dart';
 import '../../features/delivery/presentation/pages/delivery_dashboard_page.dart';
 import '../../features/delivery/presentation/pages/delivery_tracking_page.dart';
@@ -233,21 +236,77 @@ final appRouter = GoRouter(
   ],
 );
 
-class MainShellPage extends StatelessWidget {
+class MainShellPage extends StatefulWidget {
   final StatefulNavigationShell navigationShell;
 
   const MainShellPage({super.key, required this.navigationShell});
 
   @override
+  State<MainShellPage> createState() => _MainShellPageState();
+}
+
+class _MainShellPageState extends State<MainShellPage> {
+  Timer? _notificationTimer;
+  final Set<int> _notifiedIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _startNotificationPolling();
+  }
+
+  @override
+  void dispose() {
+    _notificationTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startNotificationPolling() {
+    _checkNotifications();
+    _notificationTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      _checkNotifications();
+    });
+  }
+
+  Future<void> _checkNotifications() async {
+    try {
+      final sessionManager = sl<SessionManager>();
+      if (!sessionManager.isAuthenticated || sessionManager.isDelivery) {
+        return;
+      }
+      
+      final getNotifications = sl<GetNotificationsUseCase>();
+      final result = await getNotifications();
+      result.fold(
+        (failure) => debugPrint('Failed to poll notifications: ${failure.message}'),
+        (notifications) {
+          for (final notification in notifications) {
+            if (!notification.isRead && !_notifiedIds.contains(notification.id)) {
+              _notifiedIds.add(notification.id);
+              LocalNotificationManager.showNotification(
+                id: notification.id,
+                title: notification.title,
+                body: notification.body,
+              );
+            }
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint('Error checking notifications: $e');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: navigationShell,
+      body: widget.navigationShell,
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: navigationShell.currentIndex,
+        currentIndex: widget.navigationShell.currentIndex,
         onTap: (index) {
-          navigationShell.goBranch(
+          widget.navigationShell.goBranch(
             index,
-            initialLocation: index == navigationShell.currentIndex,
+            initialLocation: index == widget.navigationShell.currentIndex,
           );
         },
         type: BottomNavigationBarType.fixed,

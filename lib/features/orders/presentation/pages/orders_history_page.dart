@@ -1,8 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../di/injection_container.dart';
+import '../../../../core/events/order_events.dart';
+import '../../../cart/presentation/bloc/cart_bloc.dart';
+import '../../../cart/presentation/bloc/cart_event.dart';
 import '../bloc/orders_bloc.dart';
 import '../bloc/orders_event.dart';
 import '../bloc/orders_state.dart';
@@ -19,12 +23,23 @@ class OrdersHistoryPage extends StatefulWidget {
 class _OrdersHistoryPageState extends State<OrdersHistoryPage> with SingleTickerProviderStateMixin {
   late OrdersBloc _bloc;
   late TabController _tabController;
+  StreamSubscription? _orderEventSubscription;
 
   @override
   void initState() {
     super.initState();
     _bloc = sl<OrdersBloc>()..add(FetchOrders());
     _tabController = TabController(length: 2, vsync: this);
+    _orderEventSubscription = sl<OrderEventBus>().stream.listen((event) {
+      _bloc.add(FetchOrders());
+    });
+  }
+
+  @override
+  void dispose() {
+    _orderEventSubscription?.cancel();
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -48,9 +63,23 @@ class _OrdersHistoryPageState extends State<OrdersHistoryPage> with SingleTicker
             ],
           ),
         ),
-        body: BlocBuilder<OrdersBloc, OrdersState>(
+        body: BlocConsumer<OrdersBloc, OrdersState>(
+          listener: (context, state) {
+            if (state is ReorderSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Order recreated in cart successfully!')),
+              );
+              context.read<CartBloc>().add(FetchCart());
+              _bloc.add(FetchOrders());
+              context.go('/cart');
+            } else if (state is OrdersError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(state.message)),
+              );
+            }
+          },
           builder: (context, state) {
-            if (state is OrdersLoading) {
+            if (state is OrdersLoading || state is OrdersInitial) {
               return const Center(child: CircularProgressIndicator(color: AppColors.primary));
             } else if (state is OrdersLoaded) {
               return TabBarView(
@@ -60,8 +89,6 @@ class _OrdersHistoryPageState extends State<OrdersHistoryPage> with SingleTicker
                   _buildOrdersList(state.orders.where((o) => o.status == OrderStatus.delivered || o.status == OrderStatus.cancelled).toList()),
                 ],
               );
-            } else if (state is OrdersError) {
-              return Center(child: Text(state.message));
             }
             return const SizedBox.shrink();
           },
@@ -129,7 +156,10 @@ class _OrdersHistoryPageState extends State<OrdersHistoryPage> with SingleTicker
                     Text('${order.createdAt.day}/${order.createdAt.month}/${order.createdAt.year}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                     Row(
                       children: [
-                        TextButton(onPressed: () {}, child: const Text('Reorder', style: TextStyle(color: AppColors.primary))),
+                        TextButton(
+                          onPressed: () => _bloc.add(ReorderEvent(order.id)),
+                          child: const Text('Reorder', style: TextStyle(color: AppColors.primary)),
+                        ),
                         const SizedBox(width: 8),
                         OutlinedButton(onPressed: () => context.push('/order-details/${order.id}'), child: const Text('Details')),
                       ],

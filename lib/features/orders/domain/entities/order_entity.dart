@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../../../home/domain/entities/restaurant_entity.dart';
+import '../../../profile/domain/entities/user_profile_entity.dart';
 import 'order_item_entity.dart';
 
 // ignore: constant_identifier_names
@@ -50,6 +51,9 @@ class OrderEntity extends Equatable {
   final String? notes;
   final double? latitude;
   final double? longitude;
+  final double? driverLatitude;
+  final double? driverLongitude;
+  final UserProfileEntity? driver;
 
   const OrderEntity({
     required this.id,
@@ -62,6 +66,9 @@ class OrderEntity extends Equatable {
     this.notes,
     this.latitude,
     this.longitude,
+    this.driverLatitude,
+    this.driverLongitude,
+    this.driver,
   });
 
   @override
@@ -76,5 +83,8 @@ class OrderEntity extends Equatable {
         notes,
         latitude,
         longitude,
+        driverLatitude,
+        driverLongitude,
+        driver,
       ];
 }

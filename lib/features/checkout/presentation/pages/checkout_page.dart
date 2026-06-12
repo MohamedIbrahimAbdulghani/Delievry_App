@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../di/injection_container.dart';
+import '../../../../core/events/order_events.dart';
 import '../bloc/checkout_bloc.dart';
 import '../bloc/checkout_event.dart';
 import '../bloc/checkout_state.dart';
@@ -54,6 +55,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           listener: (context, state) {
             if (state is CheckoutSuccess) {
               context.read<CartBloc>().add(ClearCart());
+              sl<OrderEventBus>().fire(const OrderPlacedEvent());
               _showSuccessDialog();
             } else if (state is CheckoutError) {
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
@@ -186,9 +188,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
           Center(
             child: ElevatedButton(
               onPressed: () {
-                context.go('/home');
+                context.go('/orders');
               },
-              child: const Text('Back to Home'),
+              child: const Text('View My Orders'),
             ),
           ),
         ],

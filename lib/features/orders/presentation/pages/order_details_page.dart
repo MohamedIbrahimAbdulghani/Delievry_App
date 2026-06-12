@@ -6,6 +6,7 @@ import '../../../../di/injection_container.dart';
 import '../bloc/orders_bloc.dart';
 import '../bloc/orders_event.dart';
 import '../bloc/orders_state.dart';
+import '../../domain/entities/order_entity.dart';
 import '../widgets/order_status_badge.dart';
 
 class OrderDetailsPage extends StatefulWidget {
@@ -161,20 +162,24 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
             const Text('Notes:', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
             Text(order.notes!, style: const TextStyle(fontSize: 14)),
           ],
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => context.push('/track-order/${order.id}'),
-              icon: const Icon(Icons.location_on_outlined, color: Colors.white),
-              label: const Text('Track My Order', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          if (order.status != OrderStatus.delivered &&
+              order.status != OrderStatus.cancelled &&
+              order.status != OrderStatus.failed) ...[
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => context.push('/track-order/${order.id}'),
+                icon: const Icon(Icons.location_on_outlined, color: Colors.white),
+                label: const Text('Track My Order', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );

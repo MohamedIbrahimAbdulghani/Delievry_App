@@ -8,6 +8,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders/{order}', [OrderController::class, 'show']);
     Route::patch('/orders/{order}/location', [OrderController::class, 'updateLocation']);
+    Route::post('/orders/{order}/reorder', [OrderController::class, 'reorder']);
 });
 
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {

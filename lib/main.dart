@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
 import 'core/routing/navigation_helper.dart';
+import 'core/notifications/local_notification_manager.dart';
 import 'di/injection_container.dart' as di;
 import 'features/cart/presentation/bloc/cart_bloc.dart';
 import 'features/favorites/presentation/bloc/favorites_bloc.dart';
@@ -10,6 +11,7 @@ import 'features/favorites/presentation/bloc/favorites_bloc.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await di.init();
+  await LocalNotificationManager.init();
   NavigationHelper.navigateTo = (route) => appRouter.go(route);
   runApp(const DelievryApp());
 }

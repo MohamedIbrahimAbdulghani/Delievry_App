@@ -61,6 +61,8 @@ class Order extends Model
         'placed_at',
         'latitude',
         'longitude',
+        'driver_latitude',
+        'driver_longitude',
     ];
 
     protected function casts(): array
@@ -70,6 +72,8 @@ class Order extends Model
             'delivery_fee' => 'decimal:2',
             'total' => 'decimal:2',
             'placed_at' => 'datetime',
+            'driver_latitude' => 'double',
+            'driver_longitude' => 'double',
         ];
     }
 

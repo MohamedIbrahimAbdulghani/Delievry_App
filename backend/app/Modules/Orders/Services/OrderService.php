@@ -10,6 +10,7 @@ use App\Modules\Orders\Models\OrderItem;
 use App\Modules\Orders\Repositories\OrderRepository;
 use App\Modules\Payments\Models\Payment;
 use App\Modules\Restaurants\Models\Restaurant;
+use App\Modules\Notifications\Models\Notification;
 use App\Support\Pagination\ListQuery;
 use App\Support\Pagination\PaginationPresenter;
 use Illuminate\Support\Facades\DB;
@@ -140,10 +141,44 @@ class OrderService
         } elseif ($status === 'delivered') {
             $order->latitude = 37.7849;
             $order->longitude = -122.4294;
+            
+            // Create order delivered notification for the customer
+            Notification::create([
+                'user_id' => $order->user_id,
+                'title' => 'Order Delivered',
+                'body' => "Your order #{$order->id} has been delivered successfully. Enjoy your meal!",
+                'is_read' => false,
+            ]);
         }
         
         $order->save();
 
         return new OrderResource($order->fresh()->load(['items', 'restaurant', 'payments']));
+    }
+
+    public function reorder(Order $order, User $user): \App\Modules\Cart\Http\Resources\CartResource
+    {
+        return DB::transaction(function () use ($order, $user) {
+            $cart = $this->carts->getOrCreateForUser($user);
+            $cart->items()->delete();
+
+            $order->load('items');
+
+            foreach ($order->items as $item) {
+                $product = \App\Modules\Products\Models\Product::find($item->product_id);
+                if ($product && $product->is_available) {
+                    \App\Modules\Cart\Models\CartItem::create([
+                        'cart_id' => $cart->id,
+                        'product_id' => $item->product_id,
+                        'quantity' => $item->quantity,
+                        'options' => $item->options,
+                    ]);
+                }
+            }
+
+            $this->carts->loadWithItems($cart);
+
+            return new \App\Modules\Cart\Http\Resources\CartResource($cart);
+        });
     }
 }

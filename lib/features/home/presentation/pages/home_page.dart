@@ -11,6 +11,9 @@ import '../widgets/home_categories.dart';
 import '../widgets/home_restaurants.dart';
 import '../widgets/home_search_bar.dart';
 import '../widgets/home_skeleton.dart';
+import '../../../notifications/presentation/bloc/notifications_bloc.dart';
+import '../../../notifications/presentation/bloc/notifications_event.dart';
+import '../../../notifications/presentation/bloc/notifications_state.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -80,15 +83,61 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
           actions: [
-            Container(
-              margin: const EdgeInsets.only(right: 16),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.notifications_none, color: AppColors.onBackground),
-                onPressed: () => context.push('/notifications'),
+            BlocProvider(
+              create: (context) => sl<NotificationsBloc>()..add(FetchNotifications()),
+              child: BlocBuilder<NotificationsBloc, NotificationsState>(
+                builder: (context, state) {
+                  int unreadCount = 0;
+                  if (state is NotificationsLoaded) {
+                    unreadCount = state.notifications.where((n) => !n.isRead).length;
+                  }
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(right: 16),
+                        decoration: const BoxDecoration(
+                          color: AppColors.background,
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.notifications_none, color: AppColors.onBackground),
+                          onPressed: () async {
+                            await context.push('/notifications');
+                            if (context.mounted) {
+                              context.read<NotificationsBloc>().add(FetchNotifications());
+                            }
+                          },
+                        ),
+                      ),
+                      if (unreadCount > 0)
+                        Positioned(
+                          right: 12,
+                          top: -2,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 18,
+                              minHeight: 18,
+                            ),
+                            child: Text(
+                              unreadCount > 99 ? '99+' : '$unreadCount',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
             ),
           ],

@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 
 class OrderItemEntity extends Equatable {
   final int id;
+  final int productId;
   final String productName;
   final int quantity;
   final double unitPrice;
@@ -9,6 +10,7 @@ class OrderItemEntity extends Equatable {
 
   const OrderItemEntity({
     required this.id,
+    required this.productId,
     required this.productName,
     required this.quantity,
     required this.unitPrice,
@@ -18,5 +20,5 @@ class OrderItemEntity extends Equatable {
   double get lineTotal => unitPrice * quantity;
 
   @override
-  List<Object?> get props => [id, productName, quantity, unitPrice, options];
+  List<Object?> get props => [id, productId, productName, quantity, unitPrice, options];
 }

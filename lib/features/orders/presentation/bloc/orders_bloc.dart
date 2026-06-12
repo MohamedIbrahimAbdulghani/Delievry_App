@@ -28,7 +28,9 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
   }
 
   Future<void> _onFetchOrderDetails(FetchOrderDetails event, Emitter<OrdersState> emit) async {
-    emit(OrdersLoading());
+    if (event.showLoading) {
+      emit(OrdersLoading());
+    }
     final result = await getOrderDetailsUseCase(event.id);
     result.fold(
       (failure) => emit(OrdersError(failure.message)),

@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../di/injection_container.dart';
 import '../../domain/entities/order_entity.dart';
@@ -20,11 +22,22 @@ class OrderTrackingPage extends StatefulWidget {
 
 class _OrderTrackingPageState extends State<OrderTrackingPage> {
   late OrdersBloc _bloc;
+  Timer? _pollTimer;
+  OrderEntity? _lastOrder;
 
   @override
   void initState() {
     super.initState();
     _bloc = sl<OrdersBloc>()..add(FetchOrderDetails(widget.orderId));
+    _pollTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      _bloc.add(FetchOrderDetails(widget.orderId, showLoading: false));
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -32,24 +45,39 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     return BlocProvider(
       create: (context) => _bloc,
       child: Scaffold(
-        body: BlocBuilder<OrdersBloc, OrdersState>(
+        body: BlocConsumer<OrdersBloc, OrdersState>(
+          listener: (context, state) {
+            if (state is OrdersError && _lastOrder != null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to update tracking: ${state.message}')),
+              );
+            }
+          },
           builder: (context, state) {
-            if (state is OrdersLoading) {
+            if (state is OrderDetailsLoaded) {
+              _lastOrder = state.order;
+            }
+
+            if (state is OrdersLoading && _lastOrder == null) {
               return const Center(child: CircularProgressIndicator(color: AppColors.primary));
-            } else if (state is OrderDetailsLoaded) {
-              final order = state.order;
-              debugPrint('Order details loaded: ID: ${order.id}, Lat: ${order.latitude}, Lng: ${order.longitude}');
+            } else if (_lastOrder != null) {
+              final order = _lastOrder!;
+              debugPrint('Order details loaded: ID: ${order.id}, Lat: ${order.latitude}, Lng: ${order.longitude}, DriverLat: ${order.driverLatitude}');
               
-              // Fallback to San Francisco default coordinates if GPS is null/zero
               final double defaultLat = 37.7749;
               final double defaultLng = -122.4194;
               
-              final double lat = (order.latitude != null && order.latitude != 0) ? order.latitude! : defaultLat;
-              final double lng = (order.longitude != null && order.longitude != 0) ? order.longitude! : defaultLng;
-              
-              final LatLng driverLocation = LatLng(lat, lng);
-              // Slight offset to represent destination address marker
-              final LatLng deliveryLocation = LatLng(lat + 0.003, lng + 0.003);
+              final double custLat = order.latitude ?? defaultLat;
+              final double custLng = order.longitude ?? defaultLng;
+              final LatLng deliveryLocation = LatLng(custLat, custLng);
+
+              final double drLat = (order.driverLatitude != null && order.driverLatitude != 0)
+                  ? order.driverLatitude!
+                  : (custLat - 0.005);
+              final double drLng = (order.driverLongitude != null && order.driverLongitude != 0)
+                  ? order.driverLongitude!
+                  : (custLng - 0.005);
+              final LatLng driverLocation = LatLng(drLat, drLng);
 
               return Stack(
                 children: [
@@ -133,7 +161,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                   _buildTrackingInfo(order),
                 ],
               );
-            } else if (state is OrdersError) {
+            } else if (state is OrdersError && _lastOrder == null) {
               return Center(child: Text(state.message));
             }
             return const SizedBox.shrink();
@@ -213,27 +241,53 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
             const SizedBox(height: 24),
             Row(
               children: [
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 24,
-                  backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=driver'),
+                  backgroundImage: order.driver?.imageUrl != null
+                      ? NetworkImage(order.driver!.imageUrl!)
+                      : const NetworkImage('https://i.pravatar.cc/150?u=driver'),
                 ),
                 const SizedBox(width: 16),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Mohamed Ibrahim', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      Text('Delivery Partner', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                      Text(order.driver?.name ?? 'Driver Captain', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      const Text('Delivery Partner', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                     ],
                   ),
                 ),
-                IconButton(
+                 IconButton(
                   icon: const Icon(Icons.phone, color: AppColors.primary),
-                  onPressed: () {},
-                ),
-                IconButton(
-                  icon: const Icon(Icons.chat_bubble_outline, color: AppColors.primary),
-                  onPressed: () {},
+                  onPressed: () async {
+                    if (order.driver == null ||
+                        order.driver!.phone == null ||
+                        order.driver!.phone!.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Driver information is not available yet.')),
+                      );
+                      return;
+                    }
+                    final phone = order.driver!.phone!.trim();
+                    final Uri phoneUri = Uri(scheme: 'tel', path: phone);
+                    try {
+                      if (await canLaunchUrl(phoneUri)) {
+                        await launchUrl(phoneUri);
+                      } else {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Could not open phone dialer.')),
+                          );
+                        }
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error opening dialer: $e')),
+                        );
+                      }
+                    }
+                  },
                 ),
               ],
             ),

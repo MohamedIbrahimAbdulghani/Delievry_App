@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/auth/session_manager.dart';
 import '../core/events/favorite_events.dart';
+import '../core/events/order_events.dart';
 import '../core/network/dio_client.dart';
 import '../features/admin/data/datasources/admin_remote_data_source.dart';
 import '../features/admin/data/repositories/admin_repository_impl.dart';
@@ -44,6 +45,12 @@ import '../features/orders/data/repositories/order_repository_impl.dart';
 import '../features/orders/domain/repositories/order_repository.dart';
 import '../features/orders/domain/usecases/order_usecases.dart';
 import '../features/orders/presentation/bloc/orders_bloc.dart';
+import '../features/notifications/data/datasources/notification_remote_data_source.dart';
+import '../features/notifications/data/repositories/notification_repository_impl.dart';
+import '../features/notifications/domain/repositories/notification_repository.dart';
+import '../features/notifications/domain/usecases/get_notifications_usecase.dart';
+import '../features/notifications/domain/usecases/mark_notification_as_read_usecase.dart';
+import '../features/notifications/presentation/bloc/notifications_bloc.dart';
 import '../features/profile/data/datasources/user_remote_data_source.dart';
 import '../features/profile/data/repositories/user_repository_impl.dart';
 import '../features/profile/domain/repositories/user_repository.dart';
@@ -81,6 +88,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => const FlutterSecureStorage());
   sl.registerLazySingleton(() => SessionManager(secureStorage: sl()));
   sl.registerLazySingleton(() => FavoriteEventBus());
+  sl.registerLazySingleton(() => OrderEventBus());
   sl.registerLazySingleton(() => Dio());
   sl.registerLazySingleton(() => DioClient(dio: sl(), secureStorage: sl()));
 
@@ -173,6 +181,16 @@ Future<void> init() async {
         getOrdersUseCase: sl(),
         getOrderDetailsUseCase: sl(),
         reorderUseCase: sl(),
+      ));
+
+  // Notifications
+  sl.registerLazySingleton<NotificationRemoteDataSource>(() => NotificationRemoteDataSourceImpl(dioClient: sl()));
+  sl.registerLazySingleton<NotificationRepository>(() => NotificationRepositoryImpl(remoteDataSource: sl()));
+  sl.registerLazySingleton(() => GetNotificationsUseCase(sl()));
+  sl.registerLazySingleton(() => MarkNotificationAsReadUseCase(sl()));
+  sl.registerFactory(() => NotificationsBloc(
+        getNotificationsUseCase: sl(),
+        markNotificationAsReadUseCase: sl(),
       ));
 
   // Favorites

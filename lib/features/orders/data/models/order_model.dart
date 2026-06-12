@@ -1,4 +1,5 @@
 import '../../../home/data/models/restaurant_model.dart';
+import '../../../profile/data/models/user_profile_model.dart';
 import '../../domain/entities/order_entity.dart';
 import 'order_item_model.dart';
 
@@ -14,6 +15,9 @@ class OrderModel extends OrderEntity {
     super.notes,
     super.latitude,
     super.longitude,
+    super.driverLatitude,
+    super.driverLongitude,
+    super.driver,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -22,6 +26,7 @@ class OrderModel extends OrderEntity {
 
     // 'restaurant' may be null if not loaded; fall back to a minimal placeholder
     final restaurantJson = json['restaurant'];
+    final driverJson = json['driver'];
 
     return OrderModel(
       id: json['id'],
@@ -50,6 +55,9 @@ class OrderModel extends OrderEntity {
       notes: json['notes'],
       latitude: json['latitude'] != null ? double.tryParse(json['latitude'].toString()) : null,
       longitude: json['longitude'] != null ? double.tryParse(json['longitude'].toString()) : null,
+      driverLatitude: json['driver_latitude'] != null ? double.tryParse(json['driver_latitude'].toString()) : null,
+      driverLongitude: json['driver_longitude'] != null ? double.tryParse(json['driver_longitude'].toString()) : null,
+      driver: driverJson != null ? UserProfileModel.fromJson(Map<String, dynamic>.from(driverJson)) : null,
     );
   }
 
