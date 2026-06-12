@@ -186,6 +186,37 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           color: Colors.grey[450],
                         ),
                       ),
+                      if (notification.restaurantId != null && !notification.isRated) ...[
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: () => _showRatingBottomSheet(context, notification),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            side: const BorderSide(color: AppColors.primary),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          ),
+                          icon: const Icon(Icons.star_outline, size: 18),
+                          label: const Text(
+                            'Rate Restaurant',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ] else if (notification.restaurantId != null && notification.isRated) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            const Icon(Icons.check_circle_outline, color: Colors.green, size: 18),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Rated successfully',
+                              style: TextStyle(color: Colors.green[700], fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -194,6 +225,123 @@ class _NotificationsPageState extends State<NotificationsPage> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showRatingBottomSheet(BuildContext context, NotificationEntity notification) {
+    final commentController = TextEditingController();
+    double selectedRating = 5.0;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Rate Restaurant',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.onBackground),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Please rate your order experience with stars and leave a comment.',
+                      style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(5, (index) {
+                        final starValue = index + 1.0;
+                        return IconButton(
+                          onPressed: () {
+                            setModalState(() {
+                              selectedRating = starValue;
+                            });
+                          },
+                          icon: Icon(
+                            selectedRating >= starValue ? Icons.star : Icons.star_border,
+                            color: selectedRating >= starValue ? Colors.amber : Colors.grey[300],
+                            size: 40,
+                          ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: commentController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: 'Write your comment here (optional)...',
+                        hintStyle: TextStyle(color: Colors.grey[400]),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppColors.primary),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () {
+                        _bloc.add(SubmitNotificationRating(
+                          restaurantId: notification.restaurantId!,
+                          rating: selectedRating,
+                          comment: commentController.text.trim(),
+                          notificationId: notification.id,
+                        ));
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Submit Review',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

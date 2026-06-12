@@ -31,4 +31,26 @@ class RestaurantRepositoryImpl implements RestaurantRepository {
       return Left(ServerFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, Unit>> submitReview({
+    required int restaurantId,
+    required double rating,
+    required String comment,
+    int? notificationId,
+  }) async {
+    try {
+      await remoteDataSource.submitReview(
+        restaurantId: restaurantId,
+        rating: rating,
+        comment: comment,
+        notificationId: notificationId,
+      );
+      return const Right(unit);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
 }

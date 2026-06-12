@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Modules\Restaurants\Http\Requests\StoreRestaurantRequest;
 use App\Modules\Restaurants\Http\Requests\UpdateRestaurantRequest;
 use App\Modules\Restaurants\Http\Resources\RestaurantResource;
+use App\Modules\Restaurants\Http\Resources\ReviewResource;
+use App\Modules\Notifications\Models\Notification;
 use App\Modules\Restaurants\Models\Restaurant;
 use App\Modules\Restaurants\Services\RestaurantService;
 use App\Support\Pagination\ListQuery;
@@ -33,7 +35,33 @@ class RestaurantController extends Controller
     {
         $this->authorize('view', $restaurant);
 
-        return ApiResponse::success(new RestaurantResource($restaurant->load('products')));
+        return ApiResponse::success(new RestaurantResource($restaurant->load(['products', 'reviews.user'])));
+    }
+
+    public function storeReview(Request $request, Restaurant $restaurant): JsonResponse
+    {
+        $request->validate([
+            'rating' => 'required|numeric|min:1|max:5',
+            'comment' => 'nullable|string',
+            'notification_id' => 'nullable|exists:notifications,id',
+        ]);
+
+        $review = $restaurant->reviews()->create([
+            'user_id' => auth()->id(),
+            'rating' => $request->rating,
+            'comment' => $request->comment,
+        ]);
+
+        if ($request->notification_id) {
+            $notification = Notification::where('id', $request->notification_id)
+                ->where('user_id', auth()->id())
+                ->first();
+            if ($notification) {
+                $notification->update(['is_rated' => true]);
+            }
+        }
+
+        return ApiResponse::success(new ReviewResource($review->load('user')), __('Review submitted successfully.'));
     }
 
     public function store(StoreRestaurantRequest $request): JsonResponse

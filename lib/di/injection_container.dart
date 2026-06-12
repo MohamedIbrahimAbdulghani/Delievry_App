@@ -66,6 +66,7 @@ import '../features/restaurant_details/data/repositories/restaurant_repository_i
 import '../features/restaurant_details/domain/repositories/restaurant_repository.dart';
 import '../features/restaurant_details/domain/usecases/get_restaurant_details_usecase.dart';
 import '../features/restaurant_details/domain/usecases/toggle_favorite_usecase.dart';
+import '../features/restaurant_details/domain/usecases/submit_review_usecase.dart';
 import '../features/restaurant_details/presentation/bloc/restaurant_detail_bloc.dart';
 import '../features/splash/presentation/bloc/splash_bloc.dart';
 import '../features/delivery/data/datasources/delivery_remote_data_source.dart';
@@ -137,6 +138,7 @@ Future<void> init() async {
   sl.registerLazySingleton<RestaurantRepository>(() => RestaurantRepositoryImpl(remoteDataSource: sl()));
   sl.registerLazySingleton(() => GetRestaurantDetailsUseCase(sl()));
   sl.registerLazySingleton(() => ToggleFavoriteRestaurantUseCase(sl()));
+  sl.registerLazySingleton(() => SubmitReviewUseCase(sl()));
   sl.registerFactory(() => RestaurantDetailBloc(
         getRestaurantDetailsUseCase: sl(),
         toggleFavoriteUseCase: sl(),
@@ -191,6 +193,7 @@ Future<void> init() async {
   sl.registerFactory(() => NotificationsBloc(
         getNotificationsUseCase: sl(),
         markNotificationAsReadUseCase: sl(),
+        submitReviewUseCase: sl(),
       ));
 
   // Favorites

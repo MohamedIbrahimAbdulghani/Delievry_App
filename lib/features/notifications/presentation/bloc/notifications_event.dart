@@ -17,3 +17,20 @@ class MarkAsReadEvent extends NotificationsEvent {
   @override
   List<Object?> get props => [notificationId];
 }
+
+class SubmitNotificationRating extends NotificationsEvent {
+  final int restaurantId;
+  final double rating;
+  final String comment;
+  final int notificationId;
+
+  const SubmitNotificationRating({
+    required this.restaurantId,
+    required this.rating,
+    required this.comment,
+    required this.notificationId,
+  });
+
+  @override
+  List<Object?> get props => [restaurantId, rating, comment, notificationId];
+}

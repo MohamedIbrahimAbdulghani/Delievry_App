@@ -25,6 +25,9 @@ class RestaurantResource extends JsonResource
             'image_url' => $this->image_url,
             'is_favorite' => auth('sanctum')->user() ? \App\Models\Favorite::where('user_id', auth('sanctum')->user()->id)->where('restaurant_id', $this->id)->exists() : false,
             'products' => \App\Modules\Products\Http\Resources\ProductResource::collection($this->whenLoaded('products')),
+            'reviews' => ReviewResource::collection($this->whenLoaded('reviews')),
+            'rating' => (double) ($this->reviews()->avg('rating') ?? 4.5),
+            'total_reviews' => (int) $this->reviews()->count(),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

@@ -6,6 +6,12 @@ import '../models/restaurant_detail_model.dart';
 abstract class RestaurantRemoteDataSource {
   Future<RestaurantDetailModel> getRestaurantDetails(int id);
   Future<bool> toggleFavorite(int id);
+  Future<void> submitReview({
+    required int restaurantId,
+    required double rating,
+    required String comment,
+    int? notificationId,
+  });
 }
 
 class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
@@ -41,6 +47,30 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
         return response.data['data']['is_favorite'];
       } else {
         throw ServerException(response.data['message'] ?? 'Failed to toggle favorite');
+      }
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  @override
+  Future<void> submitReview({
+    required int restaurantId,
+    required double rating,
+    required String comment,
+    int? notificationId,
+  }) async {
+    try {
+      final response = await dioClient.post(
+        '${ApiConstants.restaurants}/$restaurantId/reviews',
+        data: {
+          'rating': rating,
+          'comment': comment,
+          'notification_id':? notificationId,
+        },
+      );
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw ServerException(response.data['message'] ?? 'Failed to submit review');
       }
     } catch (e) {
       throw ServerException(e.toString());

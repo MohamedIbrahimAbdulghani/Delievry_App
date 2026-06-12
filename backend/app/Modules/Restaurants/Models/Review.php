@@ -1,28 +1,32 @@
 <?php
 
-namespace App\Modules\Notifications\Models;
+namespace App\Modules\Restaurants\Models;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class Notification extends Model
+class Review extends Model
 {
+    protected $table = 'restaurant_reviews';
+
     protected $fillable = [
-        'user_id',
-        'title',
-        'body',
-        'is_read',
         'restaurant_id',
-        'is_rated',
+        'user_id',
+        'rating',
+        'comment',
     ];
 
     protected function casts(): array
     {
         return [
-            'is_read' => 'boolean',
-            'is_rated' => 'boolean',
+            'rating' => 'integer',
         ];
+    }
+
+    public function restaurant(): BelongsTo
+    {
+        return $this->belongsTo(Restaurant::class);
     }
 
     public function user(): BelongsTo

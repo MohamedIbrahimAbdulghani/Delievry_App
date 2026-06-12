@@ -148,6 +148,7 @@ class OrderService
                 'title' => 'Order Delivered',
                 'body' => "Your order #{$order->id} has been delivered successfully. Enjoy your meal!",
                 'is_read' => false,
+                'restaurant_id' => $order->restaurant_id,
             ]);
         }
         
