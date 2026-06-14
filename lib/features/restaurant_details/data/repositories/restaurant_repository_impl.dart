@@ -34,14 +34,14 @@ class RestaurantRepositoryImpl implements RestaurantRepository {
 
   @override
   Future<Either<Failure, Unit>> submitReview({
-    required int restaurantId,
+    required int orderId,
     required double rating,
     required String comment,
     int? notificationId,
   }) async {
     try {
       await remoteDataSource.submitReview(
-        restaurantId: restaurantId,
+        orderId: orderId,
         rating: rating,
         comment: comment,
         notificationId: notificationId,

@@ -68,6 +68,15 @@ class OrderController extends Controller
         return ApiResponse::success($resource, __('Order status updated.'));
     }
 
+    public function accept(Order $order, Request $request): JsonResponse
+    {
+        $this->authorize('accept', $order);
+
+        $resource = $this->orderService->acceptOrder($order, $request->user());
+
+        return ApiResponse::success($resource, __('Order accepted successfully.'));
+    }
+
     public function updateLocation(Request $request, Order $order): JsonResponse
     {
         $request->validate([
@@ -100,15 +109,17 @@ class OrderController extends Controller
             if ($latDiff <= 0.0005 && $lngDiff <= 0.0005) {
                 $exists = \App\Modules\Notifications\Models\Notification::where('user_id', $order->user_id)
                     ->where('title', 'Order Arrived')
-                    ->where('body', 'like', "%Order #{$order->id}%")
+                    ->where('order_id', $order->id)
                     ->exists();
 
                 if (!$exists) {
                     \App\Modules\Notifications\Models\Notification::create([
                         'user_id' => $order->user_id,
                         'title' => 'Order Arrived',
-                        'body' => "Your order #{$order->id} has arrived and is ready for pickup.",
+                        'body' => "The delivery driver has arrived at your location with order #{$order->id}. Please collect it and rate the restaurant and service!",
                         'is_read' => false,
+                        'restaurant_id' => $order->restaurant_id,
+                        'order_id' => $order->id,
                     ]);
                 }
             }

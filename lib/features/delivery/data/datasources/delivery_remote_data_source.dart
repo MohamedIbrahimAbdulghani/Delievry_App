@@ -10,6 +10,7 @@ abstract class DeliveryRemoteDataSource {
   Future<UserModel> toggleAvailability(bool isOnline);
   Future<Map<String, dynamic>> getDriverEarnings();
   Future<List<OrderModel>> getDeliveryHistory({int page = 1});
+  Future<OrderModel> acceptOrder(int orderId);
 }
 
 class DeliveryRemoteDataSourceImpl implements DeliveryRemoteDataSource {
@@ -105,6 +106,19 @@ class DeliveryRemoteDataSourceImpl implements DeliveryRemoteDataSource {
         return data.map((json) => OrderModel.fromJson(Map<String, dynamic>.from(json))).toList();
       }
       throw ServerException('Failed to load history');
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  @override
+  Future<OrderModel> acceptOrder(int orderId) async {
+    try {
+      final response = await dioClient.post('/delivery/orders/$orderId/accept');
+      if (response.statusCode == 200) {
+        return OrderModel.fromJson(response.data['data']);
+      }
+      throw ServerException(response.data['message'] ?? 'Failed to accept order');
     } catch (e) {
       throw ServerException(e.toString());
     }

@@ -15,6 +15,12 @@ class ProductPolicy
 
     public function view(?Authenticatable $user, Product $product): bool
     {
+        $restaurant = $product->restaurant;
+        $isRestaurantActive = $restaurant ? $restaurant->is_active : false;
+
+        if (!$product->is_available || !$isRestaurantActive) {
+            return $user && ($user->is_admin || $user->role === 'admin');
+        }
         return true;
     }
 

@@ -50,6 +50,7 @@ import '../features/notifications/data/repositories/notification_repository_impl
 import '../features/notifications/domain/repositories/notification_repository.dart';
 import '../features/notifications/domain/usecases/get_notifications_usecase.dart';
 import '../features/notifications/domain/usecases/mark_notification_as_read_usecase.dart';
+import '../features/notifications/domain/usecases/mark_all_notifications_as_read_usecase.dart';
 import '../features/notifications/presentation/bloc/notifications_bloc.dart';
 import '../features/profile/data/datasources/user_remote_data_source.dart';
 import '../features/profile/data/repositories/user_repository_impl.dart';
@@ -78,6 +79,7 @@ import '../features/delivery/domain/usecases/update_driver_location_usecase.dart
 import '../features/delivery/domain/usecases/toggle_availability_usecase.dart';
 import '../features/delivery/domain/usecases/get_driver_earnings_usecase.dart';
 import '../features/delivery/domain/usecases/get_delivery_history_usecase.dart';
+import '../features/delivery/domain/usecases/accept_order_usecase.dart';
 import '../features/delivery/presentation/bloc/delivery_bloc.dart';
 
 final sl = GetIt.instance;
@@ -190,9 +192,11 @@ Future<void> init() async {
   sl.registerLazySingleton<NotificationRepository>(() => NotificationRepositoryImpl(remoteDataSource: sl()));
   sl.registerLazySingleton(() => GetNotificationsUseCase(sl()));
   sl.registerLazySingleton(() => MarkNotificationAsReadUseCase(sl()));
+  sl.registerLazySingleton(() => MarkAllNotificationsAsReadUseCase(sl()));
   sl.registerFactory(() => NotificationsBloc(
         getNotificationsUseCase: sl(),
         markNotificationAsReadUseCase: sl(),
+        markAllNotificationsAsReadUseCase: sl(),
         submitReviewUseCase: sl(),
       ));
 
@@ -213,6 +217,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => UpdateProfileUseCase(sl()));
   sl.registerLazySingleton(() => GetAddressesUseCase(sl()));
   sl.registerLazySingleton(() => LogoutUseCase(sl()));
+  sl.registerLazySingleton(() => UpdateDeviceTokenUseCase(sl()));
   sl.registerFactory(() => ProfileBloc(
         getUserProfileUseCase: sl(),
         updateProfileUseCase: sl(),
@@ -235,6 +240,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => ToggleAvailabilityUseCase(sl()));
   sl.registerLazySingleton(() => GetDriverEarningsUseCase(sl()));
   sl.registerLazySingleton(() => GetDeliveryHistoryUseCase(sl()));
+  sl.registerLazySingleton(() => AcceptOrderUseCase(sl()));
   sl.registerFactory(() => DeliveryBloc(
         getAssignedOrdersUseCase: sl(),
         updateDeliveryStatusUseCase: sl(),
@@ -242,6 +248,7 @@ Future<void> init() async {
         toggleAvailabilityUseCase: sl(),
         getDriverEarningsUseCase: sl(),
         getDeliveryHistoryUseCase: sl(),
+        acceptOrderUseCase: sl(),
         sessionManager: sl(),
       ));
 }

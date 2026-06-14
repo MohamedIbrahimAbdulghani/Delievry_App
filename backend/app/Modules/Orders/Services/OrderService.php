@@ -121,6 +121,19 @@ class OrderService
                         : ['cod' => true],
                 ]);
 
+                // Create admin notifications for new order
+                $admins = \App\Models\User::where('is_admin', true)->get();
+                foreach ($admins as $admin) {
+                    Notification::create([
+                        'user_id' => $admin->id,
+                        'title' => 'New Order Placed',
+                        'body' => "New order #{$order->id} of amount \${$total} has been placed from {$restaurant->name}.",
+                        'is_read' => false,
+                        'restaurant_id' => $restaurant->id,
+                        'order_id' => $order->id,
+                    ]);
+                }
+
                 $createdOrders[] = $order->load(['items', 'restaurant', 'payments']);
             }
 
@@ -130,31 +143,146 @@ class OrderService
         });
     }
 
+    /**
+     * Validate status transition.
+     */
+    public static function isValidTransition(string $from, string $to): bool
+    {
+        $valid = [
+            Order::STATUS_PENDING => [Order::STATUS_PREPARING, Order::STATUS_CANCELLED],
+            Order::STATUS_PREPARING => [Order::STATUS_HEADING_TO_RESTAURANT, Order::STATUS_CANCELLED],
+            Order::STATUS_HEADING_TO_RESTAURANT => [Order::STATUS_PICKED_UP, Order::STATUS_PREPARING, Order::STATUS_CANCELLED],
+            Order::STATUS_PICKED_UP => [Order::STATUS_OUT_FOR_DELIVERY, Order::STATUS_FAILED, Order::STATUS_CANCELLED],
+            Order::STATUS_OUT_FOR_DELIVERY => [Order::STATUS_DELIVERED, Order::STATUS_FAILED, Order::STATUS_CANCELLED],
+            Order::STATUS_DELIVERED => [],
+            Order::STATUS_FAILED => [],
+            Order::STATUS_CANCELLED => [],
+        ];
+        return in_array($to, $valid[$from] ?? [], true);
+    }
+
     public function updateStatus(Order $order, string $status): OrderResource
     {
-        $order->status = $status;
-        
-        // Simulate driver moving on status update
-        if ($status === 'processing') {
-            $order->latitude = 37.7789;
-            $order->longitude = -122.4214;
-        } elseif ($status === 'delivered') {
-            $order->latitude = 37.7849;
-            $order->longitude = -122.4294;
-            
-            // Create order delivered notification for the customer
-            Notification::create([
-                'user_id' => $order->user_id,
-                'title' => 'Order Delivered',
-                'body' => "Your order #{$order->id} has been delivered successfully. Enjoy your meal!",
-                'is_read' => false,
-                'restaurant_id' => $order->restaurant_id,
-            ]);
-        }
-        
-        $order->save();
+        if ($order->status !== $status) {
+            if (!self::isValidTransition($order->status, $status)) {
+                throw ValidationException::withMessages([
+                    'status' => [__('Invalid status transition from :from to :to.', ['from' => $order->status, 'to' => $status])],
+                ]);
+            }
 
-        return new OrderResource($order->fresh()->load(['items', 'restaurant', 'payments']));
+            $actor = auth()->user();
+            if ($actor && $actor->role === 'delivery' && $status === Order::STATUS_PREPARING) {
+                // Driver rejected assignment
+                $order->driver_id = null;
+                $order->driver_latitude = null;
+                $order->driver_longitude = null;
+            }
+
+            $order->status = $status;
+
+            // Simulate driver moving on status update
+            if ($status === Order::STATUS_HEADING_TO_RESTAURANT || $status === Order::STATUS_OUT_FOR_DELIVERY) {
+                $order->driver_latitude = 37.7789;
+                $order->driver_longitude = -122.4214;
+            } elseif ($status === Order::STATUS_DELIVERED) {
+                $order->driver_latitude = 37.7849;
+                $order->driver_longitude = -122.4294;
+
+                // Create customer notification when status changes to Delivered
+                $notificationExists = Notification::where('order_id', $order->id)
+                    ->where('title', 'Order Delivered')
+                    ->exists();
+
+                if (!$notificationExists) {
+                    Notification::create([
+                        'user_id' => $order->user_id,
+                        'title' => 'Order Delivered',
+                        'body' => 'Your order has arrived successfully. Please rate your experience and leave a review.',
+                        'is_read' => false,
+                        'is_rated' => false,
+                        'restaurant_id' => $order->restaurant_id,
+                        'order_id' => $order->id,
+                    ]);
+
+                    // Send push notification simulation
+                    $customer = $order->user;
+                    if ($customer && $customer->device_token) {
+                        \Illuminate\Support\Facades\Log::info("Push notification sent to device token: {$customer->device_token}", [
+                            'title' => 'Order Delivered',
+                            'body' => 'Your order has arrived successfully. Please rate your experience and leave a review.',
+                            'order_id' => $order->id,
+                        ]);
+                    } else {
+                        \Illuminate\Support\Facades\Log::warning("Customer has no device token. Skipping push notification for user_id: {$order->user_id}");
+                    }
+                }
+            }
+
+            // Suppressed customer notifications on status update (customer only receives notification upon driver arrival)
+
+            if ($status === Order::STATUS_PREPARING) {
+                // Find all active drivers/delivery users
+                $activeDrivers = \App\Models\User::whereIn('role', ['driver', 'delivery'])
+                    ->where('is_online', true)
+                    ->get();
+
+                foreach ($activeDrivers as $driver) {
+                    Notification::create([
+                        'user_id' => $driver->id,
+                        'title' => 'New Delivery Request',
+                        'body' => "New order #{$order->id} is available for delivery from {$order->restaurant->name}.",
+                        'is_read' => false,
+                        'restaurant_id' => $order->restaurant_id,
+                        'order_id' => $order->id,
+                    ]);
+                }
+            }
+
+            $order->save();
+        }
+
+        return new OrderResource($order->fresh()->load(['items', 'restaurant', 'payments', 'driver']));
+    }
+
+    public function acceptOrder(Order $order, User $driver): OrderResource
+    {
+        return DB::transaction(function () use ($order, $driver) {
+            // Pessimistic locking to prevent race conditions
+            $lockedOrder = Order::lockForUpdate()->findOrFail($order->id);
+
+            if ($lockedOrder->driver_id !== null) {
+                throw ValidationException::withMessages([
+                    'driver' => [__('This order has already been accepted by another driver.')],
+                ]);
+            }
+
+            if ($lockedOrder->status !== Order::STATUS_PREPARING) {
+                throw ValidationException::withMessages([
+                    'status' => [__('This order cannot be accepted in its current status.')],
+                ]);
+            }
+
+            $lockedOrder->update([
+                'driver_id' => $driver->id,
+                'status' => Order::STATUS_HEADING_TO_RESTAURANT,
+                'driver_latitude' => 37.7789,
+                'driver_longitude' => -122.4214,
+            ]);
+
+            // Hide from other drivers: delete notifications for other drivers
+            Notification::where('order_id', $lockedOrder->id)
+                ->where('user_id', '!=', $driver->id)
+                ->delete();
+
+            // Also delete the notification for the assigned driver to clear their screen
+            Notification::where('order_id', $lockedOrder->id)
+                ->where('user_id', $driver->id)
+                ->delete();
+
+            // Suppressed customer notification when driver accepts order (customer only receives notification upon driver arrival)
+
+            return new OrderResource($lockedOrder->fresh()->load(['items', 'restaurant', 'payments', 'driver']));
+        });
     }
 
     public function reorder(Order $order, User $user): \App\Modules\Cart\Http\Resources\CartResource

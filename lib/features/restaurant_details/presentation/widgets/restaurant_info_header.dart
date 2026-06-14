@@ -14,44 +14,18 @@ class RestaurantInfoHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Text(
-                  restaurant.name,
-                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                  ) ?? const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.onBackground,
-                    fontFamily: 'Plus Jakarta Sans',
-                    letterSpacing: -0.5,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withAlpha(25),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.primary.withAlpha(50), width: 1),
-                ),
-                child: const Text(
-                  'Open',
-                  style: TextStyle(
-                    color: AppColors.primary, 
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            restaurant.name,
+            style: Theme.of(context).textTheme.displayLarge?.copyWith(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+            ) ?? const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              color: AppColors.onBackground,
+              fontFamily: 'Plus Jakarta Sans',
+              letterSpacing: -0.5,
+            ),
           ),
           const SizedBox(height: 16),
           Row(
@@ -84,22 +58,6 @@ class RestaurantInfoHeader extends StatelessWidget {
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w500,
                 ) ?? const TextStyle(fontSize: 14, color: AppColors.textSecondary),
-              ),
-              const Spacer(),
-              TextButton(
-                onPressed: () {},
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text(
-                  'See details', 
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Inter',
-                  ),
-                ),
               ),
             ],
           ),

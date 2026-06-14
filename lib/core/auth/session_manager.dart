@@ -12,6 +12,8 @@ class SessionManager {
 
   bool get isAuthenticated => _currentUser != null;
 
+  Future<String?> getToken() => secureStorage.read(key: 'token');
+
   bool get isAdmin => _currentUser?.isAdmin ?? false;
 
   bool get isDelivery => _currentUser?.role == 'delivery';

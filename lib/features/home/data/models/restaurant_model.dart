@@ -12,6 +12,8 @@ class RestaurantModel extends RestaurantEntity {
     required super.isActive,
     super.imageUrl,
     super.isFavorite,
+    super.rating,
+    super.totalReviews,
   });
 
   factory RestaurantModel.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,8 @@ class RestaurantModel extends RestaurantEntity {
       isActive: json['is_active'],
       imageUrl: json['image_url'],
       isFavorite: json['is_favorite'] ?? false,
+      rating: double.parse((json['rating'] ?? 0.0).toString()),
+      totalReviews: int.parse((json['total_reviews'] ?? 0).toString()),
     );
   }
 
@@ -41,6 +45,8 @@ class RestaurantModel extends RestaurantEntity {
       'is_active': isActive,
       'image_url': imageUrl,
       'is_favorite': isFavorite,
+      'rating': rating,
+      'total_reviews': totalReviews,
     };
   }
 }

@@ -17,7 +17,13 @@ class OrderRepository
         $q = Order::query()->with(['restaurant', 'items']);
 
         if ($actor->isDelivery()) {
-            $q->where('driver_id', $actor->id);
+            $q->where(function ($sub) use ($actor) {
+                $sub->where('driver_id', $actor->id)
+                    ->orWhere(function ($sub2) {
+                        $sub2->whereNull('driver_id')
+                             ->where('status', Order::STATUS_PREPARING);
+                    });
+            });
         } elseif (! $actor->isAdmin()) {
             $q->where('user_id', $actor->id);
         } elseif (! empty($query->filters['user_id'])) {

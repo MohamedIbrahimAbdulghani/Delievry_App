@@ -53,3 +53,13 @@ class FetchDeliveryHistory extends DeliveryEvent {
   @override
   List<Object?> get props => [page];
 }
+
+class AcceptDeliveryEvent extends DeliveryEvent {
+  final int orderId;
+
+  const AcceptDeliveryEvent({required this.orderId});
+
+  @override
+  List<Object?> get props => [orderId];
+}
+

@@ -21,6 +21,7 @@ class UserResource extends JsonResource
             'is_admin' => (bool) $this->is_admin,
             'role' => $this->role ?? 'customer',
             'is_online' => (bool) $this->is_online,
+            'is_blocked' => (bool) $this->is_blocked,
             'latitude' => $this->latitude ? (double) $this->latitude : null,
             'longitude' => $this->longitude ? (double) $this->longitude : null,
             'created_at' => $this->created_at?->toIso8601String(),

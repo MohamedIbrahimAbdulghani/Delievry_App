@@ -10,4 +10,5 @@ abstract class DeliveryRepository {
   Future<Either<Failure, UserEntity>> toggleAvailability(bool isOnline);
   Future<Either<Failure, Map<String, dynamic>> > getDriverEarnings();
   Future<Either<Failure, List<OrderEntity>>> getDeliveryHistory({int page = 1});
+  Future<Either<Failure, OrderEntity>> acceptOrder(int orderId);
 }

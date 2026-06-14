@@ -44,7 +44,7 @@ class RestaurantDetailModel extends RestaurantDetailEntity {
               .toSet()
               .toList() ??
           [],
-      rating: double.parse((json['rating'] ?? 4.5).toString()),
+      rating: double.parse((json['rating'] ?? 0.0).toString()),
       totalReviews: json['total_reviews'] ?? 0,
     );
   }

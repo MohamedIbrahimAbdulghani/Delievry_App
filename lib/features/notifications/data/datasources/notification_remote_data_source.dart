@@ -5,6 +5,7 @@ import '../models/notification_model.dart';
 abstract class NotificationRemoteDataSource {
   Future<List<NotificationModel>> getNotifications();
   Future<NotificationModel> markAsRead(int notificationId);
+  Future<void> markAllAsRead();
 }
 
 class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
@@ -37,6 +38,19 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
         return NotificationModel.fromJson(response.data['data']);
       }
       throw ServerException('Failed to mark notification as read');
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  @override
+  Future<void> markAllAsRead() async {
+    try {
+      final response = await dioClient.post('/notifications/read-all');
+      if (response.statusCode == 200) {
+        return;
+      }
+      throw ServerException('Failed to mark all notifications as read');
     } catch (e) {
       throw ServerException(e.toString());
     }

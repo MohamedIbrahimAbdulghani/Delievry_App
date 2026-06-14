@@ -21,7 +21,15 @@ class ProductRepository
         if (! empty($query->filters['category'])) {
             $q->where('category', (string) $query->filters['category']);
         }
-        if (isset($query->filters['is_available']) && $query->filters['is_available'] !== '') {
+        $user = auth('sanctum')->user();
+        $isAdmin = $user && ($user->is_admin || $user->role === 'admin');
+
+        if (!$isAdmin) {
+            $q->where('is_available', true);
+            $q->whereHas('restaurant', function ($inner) {
+                $inner->where('is_active', true);
+            });
+        } elseif (isset($query->filters['is_available']) && $query->filters['is_available'] !== '') {
             $q->where('is_available', filter_var($query->filters['is_available'], FILTER_VALIDATE_BOOLEAN));
         }
         if (! empty($query->filters['price_min'])) {

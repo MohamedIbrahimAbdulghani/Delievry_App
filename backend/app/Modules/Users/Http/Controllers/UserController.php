@@ -80,4 +80,17 @@ class UserController extends Controller
 
         return ApiResponse::success(new UserResource($user), __('Availability updated.'));
     }
+
+    public function updateDeviceToken(Request $request): JsonResponse
+    {
+        $request->validate([
+            'device_token' => 'required|string',
+        ]);
+
+        $request->user()->update([
+            'device_token' => $request->device_token,
+        ]);
+
+        return ApiResponse::success([], __('Device token updated successfully.'));
+    }
 }

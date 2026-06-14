@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../bloc/delivery_bloc.dart';
@@ -16,18 +17,17 @@ class DashboardView extends StatelessWidget {
   Widget build(BuildContext context) {
     final earnings = state.earnings;
     
-    // Filter active orders (accepted, heading_to_restaurant, picked_up, on_the_way)
+    // Filter active orders (heading_to_restaurant, picked_up, out_for_delivery)
     final activeOrders = state.assignedOrders.where((o) => 
-      o.status == OrderStatus.accepted ||
       o.status == OrderStatus.heading_to_restaurant ||
       o.status == OrderStatus.picked_up ||
-      o.status == OrderStatus.on_the_way
+      o.status == OrderStatus.out_for_delivery
     ).toList();
 
-    // Filter newly assigned orders (confirmed / pending)
+    // Filter newly assigned orders (pending or preparing)
     final newAssignments = state.assignedOrders.where((o) =>
-      o.status == OrderStatus.confirmed ||
-      o.status == OrderStatus.pending
+      o.status == OrderStatus.pending ||
+      o.status == OrderStatus.preparing
     ).toList();
 
     return SingleChildScrollView(
@@ -269,45 +269,378 @@ class DashboardView extends StatelessWidget {
     );
   }
 
+  double _calculateDistance(double? lat1, double? lng1, double? lat2, double? lng2) {
+    if (lat1 == null || lng1 == null || lat2 == null || lng2 == null) {
+      return 3.5; // Fallback default distance
+    }
+    try {
+      const distance = Distance();
+      final double meter = distance.as(LengthUnit.Meter, LatLng(lat1, lng1), LatLng(lat2, lng2));
+      return meter / 1000.0;
+    } catch (_) {
+      return 3.5;
+    }
+  }
+
   Widget _buildNewAssignmentCard(BuildContext context, OrderEntity order) {
+    final distanceKm = _calculateDistance(
+      state.driver.latitude,
+      state.driver.longitude,
+      order.latitude,
+      order.longitude,
+    );
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        title: Text(
-          'Order #${order.id} - ${order.restaurant.name}',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('To: ${order.deliveryAddress}', maxLines: 1, overflow: TextOverflow.ellipsis),
-            Text('Payout: \$${order.restaurant.deliveryFee.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 30),
-              onPressed: () {
-                BlocProvider.of<DeliveryBloc>(context).add(
-                  UpdateDeliveryStatus(orderId: order.id, status: 'accepted'),
-                );
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.cancel_rounded, color: Colors.red, size: 30),
-              onPressed: () {
-                // Reject assignment simulation (unassign driver)
-                BlocProvider.of<DeliveryBloc>(context).add(
-                  UpdateDeliveryStatus(orderId: order.id, status: 'confirmed'), // reset status/assign
-                );
-              },
-            ),
-          ],
+      child: InkWell(
+        onTap: () => _showOrderRequestBottomSheet(context, order),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withAlpha(20),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.delivery_dining_rounded, color: AppColors.primary, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Order #${order.id}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      order.restaurant.name,
+                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on, size: 14, color: AppColors.textSecondary),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            order.deliveryAddress,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '\$${order.restaurant.deliveryFee.toStringAsFixed(2)}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withAlpha(20),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '${distanceKm.toStringAsFixed(1)} km',
+                      style: const TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  void _showOrderRequestBottomSheet(BuildContext context, OrderEntity order) {
+    final distanceKm = _calculateDistance(
+      state.driver.latitude,
+      state.driver.longitude,
+      order.latitude,
+      order.longitude,
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Grab Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Header title
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Order Request #${order.id}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      order.status.displayName,
+                      style: TextStyle(color: Colors.amber.shade900, fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+
+              // Payout display
+              Center(
+                child: Column(
+                  children: [
+                    const Text(
+                      'ESTIMATED PAYOUT',
+                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary, letterSpacing: 1.2, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '\$${order.restaurant.deliveryFee.toStringAsFixed(2)}',
+                      style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.green),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Pickup / Dropoff Timeline
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Column(
+                    children: [
+                      const Icon(Icons.radio_button_checked, color: Colors.orange, size: 20),
+                      Container(
+                        width: 2,
+                        height: 50,
+                        color: Colors.grey[300],
+                      ),
+                      const Icon(Icons.location_on, color: Colors.red, size: 20),
+                    ],
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Pickup Restaurant details
+                        Text(
+                          'PICKUP - ${order.restaurant.name}',
+                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          order.restaurant.address,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 24),
+                        // Dropoff Customer details
+                        const Text(
+                          'DELIVER TO',
+                          style: TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          order.deliveryAddress,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // Trip details row (Distance / Items count)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _buildRequestDetailTile(
+                    Icons.directions_run_rounded,
+                    'Distance',
+                    '${distanceKm.toStringAsFixed(1)} km',
+                  ),
+                  _buildRequestDetailTile(
+                    Icons.shopping_bag_rounded,
+                    'Items',
+                    '${order.items.length} items',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Items details list
+              if (order.items.isNotEmpty) ...[
+                const Text(
+                  'Items Summary',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 120),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[200]!),
+                  ),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    physics: const ClampingScrollPhysics(),
+                    itemCount: order.items.length,
+                    itemBuilder: (context, idx) {
+                      final item = order.items[idx];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        child: Row(
+                          children: [
+                            Text(
+                              '${item.quantity}x',
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text(item.productName)),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+
+              // Notes section if any
+              if (order.notes != null && order.notes!.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red.shade100),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, color: Colors.redAccent),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Note: ${order.notes}',
+                          style: TextStyle(color: Colors.red.shade800, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+
+              // Action buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Colors.red),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        BlocProvider.of<DeliveryBloc>(context).add(
+                          UpdateDeliveryStatus(orderId: order.id, status: 'preparing'),
+                        );
+                      },
+                      child: const Text('Decline', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        elevation: 0,
+                      ),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        BlocProvider.of<DeliveryBloc>(context).add(
+                          AcceptDeliveryEvent(orderId: order.id),
+                        );
+                      },
+                      child: const Text('Accept Order', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRequestDetailTile(IconData icon, String title, String val) {
+    return Column(
+      children: [
+        Icon(icon, color: AppColors.primary, size: 24),
+        const SizedBox(height: 4),
+        Text(
+          title,
+          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+        ),
+        Text(
+          val,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+        ),
+      ],
     );
   }
 
@@ -339,21 +672,41 @@ class DashboardView extends StatelessWidget {
   }
 
   void _showStatusTransitionDialog(BuildContext context, OrderEntity order) {
+    final List<Widget> tiles = [];
+    final status = order.status;
+
+    if (status == OrderStatus.preparing) {
+      tiles.add(_buildTransitionTile(context, 'Heading to Restaurant', 'heading_to_restaurant', order));
+    } else if (status == OrderStatus.heading_to_restaurant) {
+      tiles.add(_buildTransitionTile(context, 'Food Picked Up', 'picked_up', order));
+      tiles.add(_buildTransitionTile(context, 'Reject Assignment', 'preparing', order));
+    } else if (status == OrderStatus.picked_up) {
+      tiles.add(_buildTransitionTile(context, 'Out for Delivery', 'out_for_delivery', order));
+      tiles.add(_buildTransitionTile(context, 'Failed Delivery', 'failed', order));
+    } else if (status == OrderStatus.out_for_delivery) {
+      tiles.add(_buildTransitionTile(context, 'Mark as Delivered', 'delivered', order));
+      tiles.add(_buildTransitionTile(context, 'Failed Delivery', 'failed', order));
+    }
+
+    // Always allow cancellation if not completed
+    if (status != OrderStatus.delivered && status != OrderStatus.failed && status != OrderStatus.cancelled) {
+      tiles.add(_buildTransitionTile(context, 'Cancel Order', 'cancelled', order));
+    }
+
     showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
           title: Text('Transition Status for #${order.id}'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildTransitionTile(context, 'Heading to Restaurant', 'heading_to_restaurant', order),
-              _buildTransitionTile(context, 'Food Picked Up', 'picked_up', order),
-              _buildTransitionTile(context, 'On the Way', 'on_the_way', order),
-              _buildTransitionTile(context, 'Mark as Delivered', 'delivered', order),
-              _buildTransitionTile(context, 'Failed Delivery', 'failed', order),
-            ],
-          ),
+          content: tiles.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                  child: Text('No further transitions possible for this order.'),
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: tiles,
+                ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),

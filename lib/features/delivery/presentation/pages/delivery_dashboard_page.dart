@@ -9,6 +9,8 @@ import '../widgets/dashboard_view.dart';
 import '../widgets/assigned_orders_view.dart';
 import '../widgets/delivery_history_view.dart';
 import '../widgets/driver_profile_view.dart';
+import '../../../../core/auth/session_manager.dart';
+import '../../../profile/domain/usecases/profile_usecases.dart';
 
 class DeliveryDashboardPage extends StatefulWidget {
   const DeliveryDashboardPage({super.key});
@@ -25,6 +27,22 @@ class _DeliveryDashboardPageState extends State<DeliveryDashboardPage> {
   void initState() {
     super.initState();
     _bloc = sl<DeliveryBloc>()..add(FetchAssignedOrders());
+    _updateDeviceToken();
+  }
+
+  Future<void> _updateDeviceToken() async {
+    try {
+      final sessionManager = sl<SessionManager>();
+      if (sessionManager.isAuthenticated) {
+        final updateDeviceTokenUseCase = sl<UpdateDeviceTokenUseCase>();
+        final userId = sessionManager.currentUser?.id;
+        final mockToken = 'mock_fcm_token_user_$userId';
+        await updateDeviceTokenUseCase(mockToken);
+        debugPrint('Successfully registered driver device token: $mockToken');
+      }
+    } catch (e) {
+      debugPrint('Failed to update device token: $e');
+    }
   }
 
   @override

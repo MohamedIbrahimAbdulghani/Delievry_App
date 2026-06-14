@@ -34,6 +34,8 @@ import '../notifications/local_notification_manager.dart';
 import '../../features/admin/presentation/pages/admin_dashboard_page.dart';
 import '../../features/delivery/presentation/pages/delivery_dashboard_page.dart';
 import '../../features/delivery/presentation/pages/delivery_tracking_page.dart';
+import '../../features/restaurant_details/presentation/pages/rating_page.dart';
+import '../../features/profile/domain/usecases/profile_usecases.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/splash',
@@ -233,6 +235,20 @@ final appRouter = GoRouter(
       path: '/notifications',
       builder: (context, state) => const NotificationsPage(),
     ),
+    GoRoute(
+      path: '/rate-order/:id',
+      builder: (context, state) {
+        final id = state.pathParameters['id']!;
+        final extra = state.extra as Map<String, dynamic>?;
+        final restaurantId = extra?['restaurantId'] as int?;
+        final notificationId = extra?['notificationId'] as int?;
+        return RatingPage(
+          orderId: int.parse(id),
+          restaurantId: restaurantId,
+          notificationId: notificationId,
+        );
+      },
+    ),
   ],
 );
 
@@ -253,6 +269,22 @@ class _MainShellPageState extends State<MainShellPage> {
   void initState() {
     super.initState();
     _startNotificationPolling();
+    _updateDeviceToken();
+  }
+
+  Future<void> _updateDeviceToken() async {
+    try {
+      final sessionManager = sl<SessionManager>();
+      if (sessionManager.isAuthenticated) {
+        final updateDeviceTokenUseCase = sl<UpdateDeviceTokenUseCase>();
+        final userId = sessionManager.currentUser?.id;
+        final mockToken = 'mock_fcm_token_user_$userId';
+        await updateDeviceTokenUseCase(mockToken);
+        debugPrint('Successfully registered mock device token: $mockToken');
+      }
+    } catch (e) {
+      debugPrint('Failed to update device token: $e');
+    }
   }
 
   @override
@@ -271,7 +303,7 @@ class _MainShellPageState extends State<MainShellPage> {
   Future<void> _checkNotifications() async {
     try {
       final sessionManager = sl<SessionManager>();
-      if (!sessionManager.isAuthenticated || sessionManager.isDelivery) {
+      if (!sessionManager.isAuthenticated) {
         return;
       }
       

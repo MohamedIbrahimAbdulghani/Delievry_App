@@ -1,16 +1,21 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:dio/dio.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../di/injection_container.dart';
 import '../../../../core/auth/session_manager.dart';
+import '../../../../core/network/dio_client.dart';
 import '../../../home/domain/entities/restaurant_entity.dart';
 import '../../../home/domain/entities/meal_entity.dart';
 import '../../../home/domain/entities/category_entity.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../profile/domain/repositories/user_repository.dart';
+import '../../../notifications/domain/entities/notification_entity.dart';
 import '../bloc/admin_bloc.dart';
 import '../bloc/admin_event.dart';
 import '../bloc/admin_state.dart';
@@ -26,6 +31,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   late AdminBloc _adminBloc;
   int _activeTab = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  List<NotificationEntity> _notifications = [];
+  StreamSubscription? _notificationSubscription;
 
   final List<Map<String, dynamic>> _tabs = [
     {'title': 'Dashboard', 'icon': Icons.dashboard_rounded},
@@ -34,7 +41,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     {'title': 'Meals', 'icon': Icons.fastfood_rounded},
     {'title': 'Categories', 'icon': Icons.category_rounded},
     {'title': 'Users', 'icon': Icons.people_rounded},
-    {'title': 'Drivers', 'icon': Icons.delivery_dining_rounded},
     {'title': 'Analytics', 'icon': Icons.bar_chart_rounded},
     {'title': 'Settings', 'icon': Icons.settings_rounded},
   ];
@@ -43,6 +49,251 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   void initState() {
     super.initState();
     _adminBloc = sl<AdminBloc>()..add(FetchAdminData());
+    _fetchNotifications();
+    _listenToRealtimeNotifications();
+  }
+
+  @override
+  void dispose() {
+    _notificationSubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _fetchNotifications() async {
+    try {
+      final response = await sl<DioClient>().get('/notifications');
+      if (response.statusCode == 200) {
+        final List data = response.data['data'] ?? [];
+        if (mounted) {
+          setState(() {
+            _notifications = data.map((json) => NotificationEntity(
+              id: json['id'],
+              userId: json['user_id'],
+              title: json['title'],
+              body: json['body'],
+              isRead: json['is_read'] ?? false,
+              restaurantId: json['restaurant_id'],
+              isRated: json['is_rated'] ?? false,
+              orderId: json['order_id'],
+              createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : DateTime.now(),
+            )).toList();
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching notifications: $e');
+    }
+  }
+
+  void _listenToRealtimeNotifications() async {
+    try {
+      final token = await sl<SessionManager>().getToken();
+      if (token == null) return;
+
+      final client = sl<DioClient>();
+      final response = await client.dio.get<ResponseBody>(
+        '/notifications/stream',
+        options: Options(
+          responseType: ResponseType.stream,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+          },
+        ),
+      );
+
+      _notificationSubscription = response.data!.stream
+          .cast<List<int>>()
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .listen((line) {
+            if (line.startsWith('data: ')) {
+              final jsonStr = line.substring(6);
+              try {
+                final json = jsonDecode(jsonStr);
+                if (json['connected'] == true) return;
+
+                final notification = NotificationEntity(
+                  id: json['id'],
+                  userId: json['user_id'],
+                  title: json['title'],
+                  body: json['body'],
+                  isRead: json['is_read'] ?? false,
+                  restaurantId: json['restaurant_id'],
+                  isRated: json['is_rated'] ?? false,
+                  orderId: json['order_id'],
+                  createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : DateTime.now(),
+                );
+
+                if (mounted) {
+                  setState(() {
+                    _notifications.insert(0, notification);
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(notification.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text(notification.body),
+                        ],
+                      ),
+                      backgroundColor: AppColors.primary,
+                      duration: const Duration(seconds: 4),
+                      action: SnackBarAction(
+                        label: 'View',
+                        textColor: Colors.white,
+                        onPressed: () {
+                          _scaffoldKey.currentState?.openEndDrawer();
+                        },
+                      ),
+                    ),
+                  );
+                }
+              } catch (e) {
+                debugPrint('Error parsing notification JSON: $e');
+              }
+            }
+          }, onError: (error) {
+            debugPrint('Notification stream error: $error');
+            Future.delayed(const Duration(seconds: 5), () {
+              if (mounted) _listenToRealtimeNotifications();
+            });
+          }, onDone: () {
+            debugPrint('Notification stream finished');
+            Future.delayed(const Duration(seconds: 5), () {
+              if (mounted) _listenToRealtimeNotifications();
+            });
+          });
+    } catch (e) {
+      debugPrint('Error starting notification stream: $e');
+      Future.delayed(const Duration(seconds: 5), () {
+        if (mounted) _listenToRealtimeNotifications();
+      });
+    }
+  }
+
+  Future<void> _markNotificationRead(int id) async {
+    try {
+      final response = await sl<DioClient>().post('/notifications/$id/read', data: {'_method': 'PATCH'});
+      if (response.statusCode == 200) {
+        setState(() {
+          final index = _notifications.indexWhere((n) => n.id == id);
+          if (index != -1) {
+            _notifications[index] = _notifications[index].copyWith(isRead: true);
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error marking notification as read: $e');
+    }
+  }
+
+  Future<void> _markAllNotificationsRead() async {
+    try {
+      final response = await sl<DioClient>().post('/notifications/read-all');
+      if (response.statusCode == 200) {
+        setState(() {
+          _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error marking all notifications as read: $e');
+    }
+  }
+
+  Widget _buildNotificationPanel() {
+    final unread = _notifications.where((n) => !n.isRead).toList();
+    return SafeArea(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Notifications',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.onBackground),
+                ),
+                if (unread.isNotEmpty)
+                  TextButton(
+                    onPressed: _markAllNotificationsRead,
+                    child: const Text('Mark all as read'),
+                  ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: _notifications.isEmpty
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.notifications_none_rounded, size: 48, color: AppColors.textSecondary),
+                        SizedBox(height: 8),
+                        Text('No notifications yet', style: TextStyle(color: AppColors.textSecondary)),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: _notifications.length,
+                    separatorBuilder: (context, index) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final n = _notifications[index];
+                      return Container(
+                        color: n.isRead ? null : AppColors.primary.withAlpha(10),
+                        child: ListTile(
+                          title: Text(
+                            n.title,
+                            style: TextStyle(
+                              fontWeight: n.isRead ? FontWeight.normal : FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 4),
+                              Text(n.body, style: const TextStyle(fontSize: 12)),
+                              const SizedBox(height: 4),
+                              Text(
+                                _formatDate(n.createdAt),
+                                style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                              ),
+                            ],
+                          ),
+                          trailing: n.isRead
+                              ? null
+                              : IconButton(
+                                  icon: const Icon(Icons.circle, color: AppColors.primary, size: 12),
+                                  onPressed: () => _markNotificationRead(n.id),
+                                  tooltip: 'Mark as read',
+                                ),
+                          onTap: () {
+                            if (!n.isRead) {
+                              _markNotificationRead(n.id);
+                            }
+                            if (n.orderId != null) {
+                              Navigator.pop(context);
+                              setState(() {
+                                _activeTab = 1;
+                                _orderSearchQuery = n.orderId.toString();
+                              });
+                            }
+                          },
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -71,6 +322,40 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 )
               : const Icon(Icons.admin_panel_settings_rounded, color: AppColors.primary),
           actions: [
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_rounded, color: AppColors.primary),
+                  onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+                ),
+                if (_notifications.any((n) => !n.isRead))
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        '${_notifications.where((n) => !n.isRead).length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             IconButton(
               icon: const Icon(Icons.logout_rounded, color: AppColors.primary),
               onPressed: () => _showLogoutConfirmation(context),
@@ -82,6 +367,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 child: _buildSidebar(context, isDrawer: true),
               )
             : null,
+        endDrawer: Drawer(
+          child: _buildNotificationPanel(),
+        ),
         body: Row(
           children: [
             if (MediaQuery.of(context).size.width >= 800)
@@ -248,10 +536,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       case 5:
         return _buildUsersView(state);
       case 6:
-        return _buildDriversView(state);
-      case 7:
         return _buildAnalyticsView(state);
-      case 8:
+      case 7:
         return _buildSettingsView(state);
       default:
         return const SizedBox.shrink();
@@ -289,13 +575,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           onPressed: () => _showUserForm(context),
           backgroundColor: AppColors.primary,
           child: const Icon(Icons.person_add_alt_1_rounded, color: Colors.white),
-        );
-      case 6: // Drivers
-        return FloatingActionButton(
-          heroTag: 'fab_drivers',
-          onPressed: () => _showDriverForm(context, state.drivers),
-          backgroundColor: AppColors.primary,
-          child: const Icon(Icons.delivery_dining_rounded, color: Colors.white),
         );
       default:
         return null;
@@ -607,18 +886,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     switch (s) {
       case OrderStatus.pending:
         return Colors.orange;
-      case OrderStatus.confirmed:
-        return Colors.blueAccent;
       case OrderStatus.preparing:
         return Colors.blue;
-      case OrderStatus.accepted:
-        return Colors.cyan;
       case OrderStatus.heading_to_restaurant:
         return Colors.teal;
       case OrderStatus.picked_up:
         return Colors.purple;
-      case OrderStatus.on_the_way:
-        return Colors.indigo;
       case OrderStatus.out_for_delivery:
         return Colors.deepPurple;
       case OrderStatus.delivered:
@@ -673,19 +946,46 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: OrderStatus.values.map((s) {
-                           final isCurrent = order.status == s;
-                           return ChoiceChip(
-                             label: Text(s.displayName),
-                             selected: isCurrent,
-                             onSelected: (selected) {
-                               if (selected) {
-                                 Navigator.pop(ctx);
-                                 _adminBloc.add(UpdateOrderStatusEvent(orderId: order.id, status: s.apiValue));
-                               }
-                             },
-                           );
-                        }).toList(),
+                        children: [
+                          ChoiceChip(
+                            label: Text(order.status.displayName),
+                            selected: true,
+                            onSelected: (_) {},
+                            selectedColor: _getStatusColor(order.status).withAlpha(50),
+                          ),
+                          ...[
+                            if (order.status == OrderStatus.pending) ...[
+                              OrderStatus.preparing,
+                              OrderStatus.cancelled,
+                            ] else if (order.status == OrderStatus.preparing) ...[
+                              OrderStatus.heading_to_restaurant,
+                              OrderStatus.cancelled,
+                            ] else if (order.status == OrderStatus.heading_to_restaurant) ...[
+                              OrderStatus.picked_up,
+                              OrderStatus.preparing,
+                              OrderStatus.cancelled,
+                            ] else if (order.status == OrderStatus.picked_up) ...[
+                              OrderStatus.out_for_delivery,
+                              OrderStatus.failed,
+                              OrderStatus.cancelled,
+                            ] else if (order.status == OrderStatus.out_for_delivery) ...[
+                              OrderStatus.delivered,
+                              OrderStatus.failed,
+                              OrderStatus.cancelled,
+                            ]
+                          ].map((s) {
+                            return ChoiceChip(
+                              label: Text(s.displayName),
+                              selected: false,
+                              onSelected: (selected) {
+                                if (selected) {
+                                  Navigator.pop(ctx);
+                                  _adminBloc.add(UpdateOrderStatusEvent(orderId: order.id, status: s.apiValue));
+                                }
+                              },
+                            );
+                          }),
+                        ],
                       ),
                       const Divider(height: 24),
                       const Text('Assign Driver:', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -1886,16 +2186,38 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       },
     );
   }
-
   // -------------------------------------------------------------
   // TAB 5: USERS MANAGEMENT
   // -------------------------------------------------------------
   String _userSearchQuery = '';
+  String _userRoleFilter = 'All';
+  String _userStatusFilter = 'All';
 
   Widget _buildUsersView(AdminLoaded state) {
     final filteredUsers = state.users.where((u) {
-      return u.name.toLowerCase().contains(_userSearchQuery.toLowerCase()) ||
-          u.email.toLowerCase().contains(_userSearchQuery.toLowerCase());
+      final matchesSearch = u.name.toLowerCase().contains(_userSearchQuery.toLowerCase()) ||
+          u.email.toLowerCase().contains(_userSearchQuery.toLowerCase()) ||
+          (u.phone ?? '').toLowerCase().contains(_userSearchQuery.toLowerCase()) ||
+          u.role.toLowerCase().contains(_userSearchQuery.toLowerCase()) ||
+          (u.isAdmin ? 'admin' : '').contains(_userSearchQuery.toLowerCase());
+
+      bool matchesRole = true;
+      if (_userRoleFilter == 'Admins') {
+        matchesRole = u.isAdmin || u.role == 'admin';
+      } else if (_userRoleFilter == 'Customers') {
+        matchesRole = !u.isAdmin && u.role == 'customer';
+      } else if (_userRoleFilter == 'Drivers') {
+        matchesRole = u.role == 'delivery';
+      }
+
+      bool matchesStatus = true;
+      if (_userStatusFilter == 'Active') {
+        matchesStatus = !u.isBlocked;
+      } else if (_userStatusFilter == 'Inactive') {
+        matchesStatus = u.isBlocked;
+      }
+
+      return matchesSearch && matchesRole && matchesStatus;
     }).toList();
 
     return Padding(
@@ -1906,7 +2228,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Platform Users', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text('Users Management', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               if (MediaQuery.of(context).size.width >= 800)
                 ElevatedButton.icon(
                   onPressed: () => _showUserForm(context),
@@ -1917,20 +2239,54 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             ],
           ),
           const SizedBox(height: 16),
-          TextField(
-            decoration: InputDecoration(
-              hintText: 'Search users by name or email...',
-              prefixIcon: const Icon(Icons.search),
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-            ),
-            onChanged: (v) => setState(() => _userSearchQuery = v),
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search users by name, email, phone, or role...',
+                    prefixIcon: const Icon(Icons.search),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  onChanged: (v) => setState(() => _userSearchQuery = v),
+                ),
+              ),
+              const SizedBox(width: 16),
+              DropdownButton<String>(
+                value: _userRoleFilter,
+                hint: const Text('Filter Role'),
+                items: ['All', 'Admins', 'Customers', 'Drivers'].map((r) => DropdownMenuItem(
+                  value: r,
+                  child: Text(r),
+                )).toList(),
+                onChanged: (v) {
+                  if (v != null) setState(() => _userRoleFilter = v);
+                },
+              ),
+              const SizedBox(width: 16),
+              DropdownButton<String>(
+                value: _userStatusFilter,
+                hint: const Text('Filter Status'),
+                items: ['All', 'Active', 'Inactive'].map((s) => DropdownMenuItem(
+                  value: s,
+                  child: Text(s),
+                )).toList(),
+                onChanged: (v) {
+                  if (v != null) setState(() => _userStatusFilter = v);
+                },
+              ),
+            ],
           ),
           const SizedBox(height: 24),
           Expanded(
             child: filteredUsers.isEmpty
-                ? const Center(child: Text('No users matching the query.'))
+                ? const Center(child: Text('No users matching the filters.'))
                 : ListView.builder(
                     itemCount: filteredUsers.length,
                     itemBuilder: (context, index) {
@@ -1939,24 +2295,48 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       final isMobile = MediaQuery.of(context).size.width < 600;
 
                       Widget buildCardContent() {
+                        final isDriver = user.role == 'delivery';
                         final leadingWidget = CircleAvatar(
-                          backgroundColor: user.isAdmin ? AppColors.primary : Colors.grey[300],
-                          child: Icon(Icons.person, color: user.isAdmin ? Colors.white : Colors.black87),
+                          backgroundColor: user.isAdmin
+                              ? AppColors.primary
+                              : (isDriver ? Colors.teal[300] : Colors.grey[300]),
+                          child: Icon(
+                            user.isAdmin
+                                ? Icons.admin_panel_settings_rounded
+                                : (isDriver ? Icons.delivery_dining_rounded : Icons.person),
+                            color: user.isAdmin || isDriver ? Colors.white : Colors.black87,
+                          ),
                         );
+                        
                         final titleRowWidget = Row(
                           children: [
-                            Expanded(child: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold))),
+                            Expanded(
+                              child: Text(
+                                user.name,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
                             if (user.isBlocked) ...[
                               const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: const BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.all(Radius.circular(8))),
-                                child: const Text('Blocked', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                decoration: const BoxDecoration(
+                                  color: Colors.redAccent,
+                                  borderRadius: BorderRadius.all(Radius.circular(8)),
+                                ),
+                                child: const Text(
+                                  'Deactivated',
+                                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                ),
                               ),
                             ],
                           ],
                         );
-                        final subtitleWidget = Text('${user.email} | Role: ${user.isAdmin ? 'Admin' : 'Customer'}');
+
+                        final roleDisplay = isDriver ? 'Driver' : (user.isAdmin ? 'Admin' : 'Customer');
+                        final subtitleWidget = Text(
+                          '${user.email} | Phone: ${user.phone ?? 'N/A'} | Role: $roleDisplay',
+                        );
 
                         if (isMobile) {
                           return Padding(
@@ -1988,7 +2368,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                     if (!isSelf)
                                       Row(
                                         children: [
-                                          const Text('Active', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                                          Text(user.isBlocked ? 'Activate' : 'Deactivate', style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
                                           const SizedBox(width: 8),
                                           SizedBox(
                                             height: 30,
@@ -2099,6 +2479,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   void _showUserDetails(BuildContext context, UserEntity user) {
+    final isDriver = user.role == 'delivery';
+    final roleDisplay = isDriver ? 'Driver' : (user.isAdmin ? 'Admin' : 'Customer');
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -2111,9 +2493,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             const SizedBox(height: 8),
             Text('Email: ${user.email}'),
             const SizedBox(height: 8),
-            Text('Admin Privileges: ${user.isAdmin ? "Yes" : "No"}'),
+            Text('Phone: ${user.phone ?? 'N/A'}'),
             const SizedBox(height: 8),
-            Text('Account Status: ${user.isBlocked ? "Blocked" : "Active"}', style: TextStyle(color: user.isBlocked ? Colors.red : Colors.green, fontWeight: FontWeight.bold)),
+            Text('Role: $roleDisplay'),
+            const SizedBox(height: 8),
+            Text('Account Status: ${user.isBlocked ? "Deactivated" : "Active"}', style: TextStyle(color: user.isBlocked ? Colors.red : Colors.green, fontWeight: FontWeight.bold)),
           ],
         ),
         actions: [
@@ -2127,8 +2511,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(block ? 'Block User' : 'Unblock User'),
-        content: Text('Are you sure you want to ${block ? "block" : "unblock"} user "$name"?'),
+        title: Text(block ? 'Deactivate User' : 'Activate User'),
+        content: Text('Are you sure you want to ${block ? "deactivate" : "activate"} user "$name"?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           TextButton(
@@ -2136,7 +2520,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               Navigator.pop(ctx);
               onConfirm();
             },
-            child: Text(block ? 'Block' : 'Unblock', style: TextStyle(color: block ? Colors.red : Colors.green)),
+            child: Text(block ? 'Deactivate' : 'Activate', style: TextStyle(color: block ? Colors.red : Colors.green)),
           )
         ],
       ),
@@ -2147,8 +2531,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: user?.name ?? '');
     final emailController = TextEditingController(text: user?.email ?? '');
+    final phoneController = TextEditingController(text: user?.phone ?? '');
     final passwordController = TextEditingController();
-    bool isAdmin = user?.isAdmin ?? false;
+    String selectedRole = user?.role ?? (user?.isAdmin == true ? 'admin' : 'customer');
 
     showDialog(
       context: context,
@@ -2173,6 +2558,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         decoration: const InputDecoration(labelText: 'Email'),
                         validator: (v) => v == null || !v.contains('@') ? 'Invalid email' : null,
                       ),
+                      TextFormField(
+                        controller: phoneController,
+                        decoration: const InputDecoration(labelText: 'Phone Number'),
+                      ),
                       if (user == null)
                         TextFormField(
                           controller: passwordController,
@@ -2181,15 +2570,19 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           validator: (v) => v == null || v.length < 8 ? 'Password must be at least 8 chars' : null,
                         ),
                       const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Make Admin Privilege'),
-                          Switch(
-                            value: isAdmin,
-                            onChanged: (val) => setStateBuilder(() => isAdmin = val),
-                          )
+                      DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(labelText: 'Role'),
+                        initialValue: selectedRole,
+                        items: const [
+                          DropdownMenuItem(value: 'customer', child: Text('Customer')),
+                          DropdownMenuItem(value: 'delivery', child: Text('Driver')),
+                          DropdownMenuItem(value: 'admin', child: Text('Admin')),
                         ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            setStateBuilder(() => selectedRole = val);
+                          }
+                        },
                       ),
                     ],
                   ),
@@ -2203,20 +2596,17 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 TextButton(
                   onPressed: () {
                     if (formKey.currentState!.validate()) {
+                      final data = {
+                        'name': nameController.text,
+                        'email': emailController.text,
+                        'phone': phoneController.text.isEmpty ? null : phoneController.text,
+                        'role': selectedRole,
+                        'is_admin': selectedRole == 'admin',
+                      };
                       if (user == null) {
-                        final data = {
-                          'name': nameController.text,
-                          'email': emailController.text,
-                          'password': passwordController.text,
-                          'is_admin': isAdmin,
-                        };
+                        data['password'] = passwordController.text;
                         _adminBloc.add(CreateUserEvent(data));
                       } else {
-                        final data = {
-                          'name': nameController.text,
-                          'email': emailController.text,
-                          'is_admin': isAdmin,
-                        };
                         _adminBloc.add(UpdateUserEvent(id: user.id, data: data));
                       }
                       Navigator.pop(ctx);
@@ -2224,284 +2614,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   },
                   child: const Text('Save'),
                 ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  // -------------------------------------------------------------
-  // TAB 6: DELIVERY DRIVERS
-  // -------------------------------------------------------------
-  Widget _buildDriversView(AdminLoaded state) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Delivery Drivers', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              if (MediaQuery.of(context).size.width >= 800)
-                ElevatedButton.icon(
-                  onPressed: () => _showDriverForm(context, state.drivers),
-                  icon: const Icon(Icons.add, color: Colors.white),
-                  label: const Text('Add Driver', style: TextStyle(color: Colors.white)),
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Expanded(
-            child: ListView.builder(
-              itemCount: state.drivers.length,
-              itemBuilder: (context, index) {
-                final d = state.drivers[index];
-                final isBlocked = d['is_blocked'] ?? false;
-                final isMobile = MediaQuery.of(context).size.width < 600;
-
-                Widget buildCardContent() {
-                  const leadingWidget = Icon(Icons.delivery_dining_rounded, color: AppColors.primary, size: 32);
-                  final titleRowWidget = Row(
-                    children: [
-                      Expanded(child: Text(d['name'], style: const TextStyle(fontWeight: FontWeight.bold))),
-                      if (isBlocked) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: const BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.all(Radius.circular(8))),
-                          child: const Text('Blocked', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                        ),
-                      ],
-                    ],
-                  );
-                  final subtitleWidget = Text('Phone: ${d['phone']} | Status: ${d['status']}');
-
-                  if (isMobile) {
-                    return Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              leadingWidget,
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    titleRowWidget,
-                                    const SizedBox(height: 4),
-                                    subtitleWidget,
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Divider(height: 24),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  const Text('Active', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
-                                  const SizedBox(width: 8),
-                                  SizedBox(
-                                    height: 30,
-                                    child: Switch(
-                                      value: !isBlocked,
-                                      activeThumbColor: Colors.green,
-                                      inactiveThumbColor: Colors.red,
-                                      inactiveTrackColor: Colors.red[200],
-                                      onChanged: (active) {
-                                        final updatedList = List<Map<String, dynamic>>.from(state.drivers);
-                                        final idx = updatedList.indexWhere((driver) => driver['id'].toString() == d['id'].toString());
-                                        if (idx != -1) {
-                                          updatedList[idx] = Map<String, dynamic>.from(updatedList[idx])..['is_blocked'] = !active;
-                                          _adminBloc.add(SaveDriversEvent(updatedList));
-                                        }
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Row(
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.info_outline, color: Colors.teal),
-                                    onPressed: () => _showDriverDetails(context, d),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.edit, color: Colors.blue),
-                                    onPressed: () => _showDriverForm(context, state.drivers, driver: d),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red),
-                                    onPressed: () => _showDeleteConfirmation(context, () {
-                                      final updatedList = List<Map<String, dynamic>>.from(state.drivers)
-                                        ..removeWhere((driver) => driver['id'].toString() == d['id'].toString());
-                                      _adminBloc.add(SaveDriversEvent(updatedList));
-                                    }),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    );
-                  } else {
-                    return ListTile(
-                      leading: leadingWidget,
-                      title: titleRowWidget,
-                      subtitle: subtitleWidget,
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.info_outline, color: Colors.teal),
-                            onPressed: () => _showDriverDetails(context, d),
-                          ),
-                          Switch(
-                            value: !isBlocked,
-                            activeThumbColor: Colors.green,
-                            inactiveThumbColor: Colors.red,
-                            inactiveTrackColor: Colors.red[200],
-                            onChanged: (active) {
-                              final updatedList = List<Map<String, dynamic>>.from(state.drivers);
-                              final idx = updatedList.indexWhere((driver) => driver['id'].toString() == d['id'].toString());
-                              if (idx != -1) {
-                                updatedList[idx] = Map<String, dynamic>.from(updatedList[idx])..['is_blocked'] = !active;
-                                _adminBloc.add(SaveDriversEvent(updatedList));
-                              }
-                            },
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.blue),
-                            onPressed: () => _showDriverForm(context, state.drivers, driver: d),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _showDeleteConfirmation(context, () {
-                              final updatedList = List<Map<String, dynamic>>.from(state.drivers)
-                                ..removeWhere((driver) => driver['id'].toString() == d['id'].toString());
-                              _adminBloc.add(SaveDriversEvent(updatedList));
-                            }),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                }
-
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  elevation: 1,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: buildCardContent(),
-                );
-              },
-            ),
-          )
-        ],
-      ),
-    );
-  }
-
-  void _showDriverDetails(BuildContext context, Map<String, dynamic> driver) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Driver Profile Details'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Name: ${driver['name']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text('Phone: ${driver['phone']}'),
-            const SizedBox(height: 8),
-            Text('Status: ${driver['status']}'),
-            const SizedBox(height: 8),
-            Text('Driver Account Status: ${driver['is_blocked'] == true ? "Blocked" : "Active"}', style: TextStyle(color: driver['is_blocked'] == true ? Colors.red : Colors.green, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
-        ],
-      ),
-    );
-  }
-
-  void _showDriverForm(BuildContext context, List<Map<String, dynamic>> currentDrivers, {Map<String, dynamic>? driver}) {
-    final nameController = TextEditingController(text: driver?.containsKey('name') == true ? driver!['name'] : '');
-    final phoneController = TextEditingController(text: driver?.containsKey('phone') == true ? driver!['phone'] : '');
-    String status = driver?.containsKey('status') == true ? driver!['status'] : 'available';
-
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setStateBuilder) {
-            return AlertDialog(
-              title: Text(driver == null ? 'Add Driver' : 'Edit Driver'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Name')),
-                  TextField(controller: phoneController, decoration: const InputDecoration(labelText: 'Phone')),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(labelText: 'Status'),
-                    initialValue: status,
-                    items: ['available', 'busy', 'offline'].map((s) => DropdownMenuItem(
-                          value: s,
-                          child: Text(s.toUpperCase()),
-                        )).toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setStateBuilder(() => status = val);
-                      }
-                    },
-                  )
-                ],
-              ),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-                TextButton(
-                  onPressed: () {
-                    if (nameController.text.isNotEmpty) {
-                      final updatedList = List<Map<String, dynamic>>.from(currentDrivers);
-                      if (driver == null) {
-                        updatedList.add({
-                          'id': (updatedList.length + 1).toString(),
-                          'name': nameController.text,
-                          'phone': phoneController.text,
-                          'status': status,
-                          'is_blocked': false,
-                        });
-                      } else {
-                        final idx = updatedList.indexWhere((element) => element['id'].toString() == driver['id'].toString());
-                        if (idx != -1) {
-                          updatedList[idx] = {
-                            'id': driver['id'],
-                            'name': nameController.text,
-                            'phone': phoneController.text,
-                            'status': status,
-                            'is_blocked': driver['is_blocked'] ?? false,
-                          };
-                        }
-                      }
-                      _adminBloc.add(SaveDriversEvent(updatedList));
-                      Navigator.pop(ctx);
-                    }
-                  },
-                  child: const Text('Save'),
-                )
               ],
             );
           },

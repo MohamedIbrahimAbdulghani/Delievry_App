@@ -22,6 +22,11 @@ class OrderPolicy
         return true;
     }
 
+    public function accept(User $user, Order $order): bool
+    {
+        return ($user->isDelivery() || $user->role === 'driver') && $order->driver_id === null;
+    }
+
     public function updateStatus(User $user, Order $order): bool
     {
         return $user->isAdmin() || $order->driver_id === $user->id;

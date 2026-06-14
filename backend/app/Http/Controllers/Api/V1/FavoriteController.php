@@ -14,10 +14,17 @@ class FavoriteController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        
-        $favorites = Favorite::where('user_id', $user->id)
-            ->with('restaurant')
-            ->get();
+        $isAdmin = $user && ($user->is_admin || $user->role === 'admin');
+
+        $favoritesQuery = Favorite::where('user_id', $user->id);
+
+        if (!$isAdmin) {
+            $favoritesQuery->whereHas('restaurant', function ($query) {
+                $query->where('is_active', true);
+            });
+        }
+
+        $favorites = $favoritesQuery->with('restaurant')->get();
             
         $formatted = $favorites->map(function ($fav) {
             return [

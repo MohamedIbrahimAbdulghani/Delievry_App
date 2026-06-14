@@ -19,4 +19,11 @@ class NotificationService
         $notification->update(['is_read' => true]);
         return $notification;
     }
+
+    public function markAllAsReadForUser(User $user): void
+    {
+        Notification::where('user_id', $user->id)
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+    }
 }

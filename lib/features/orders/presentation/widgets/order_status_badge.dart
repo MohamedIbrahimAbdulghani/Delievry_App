@@ -28,12 +28,9 @@ class OrderStatusBadge extends StatelessWidget {
   Color _getColor() {
     switch (status) {
       case OrderStatus.pending: return Colors.orange;
-      case OrderStatus.confirmed: return Colors.blueAccent;
       case OrderStatus.preparing: return Colors.blue;
-      case OrderStatus.accepted: return Colors.cyan;
       case OrderStatus.heading_to_restaurant: return Colors.teal;
       case OrderStatus.picked_up: return Colors.purple;
-      case OrderStatus.on_the_way: return Colors.indigo;
       case OrderStatus.out_for_delivery: return Colors.deepPurple;
       case OrderStatus.delivered: return Colors.green;
       case OrderStatus.failed: return Colors.redAccent;

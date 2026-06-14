@@ -64,20 +64,17 @@ class OrderModel extends OrderEntity {
   static OrderStatus _parseStatus(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
-        return OrderStatus.pending;
       case 'confirmed':
-        return OrderStatus.confirmed;
+        return OrderStatus.pending;
       case 'preparing':
       case 'processing':
-        return OrderStatus.preparing;
       case 'accepted':
-        return OrderStatus.accepted;
+        return OrderStatus.preparing;
       case 'heading_to_restaurant':
         return OrderStatus.heading_to_restaurant;
       case 'picked_up':
         return OrderStatus.picked_up;
       case 'on_the_way':
-        return OrderStatus.on_the_way;
       case 'out_for_delivery':
         return OrderStatus.out_for_delivery;
       case 'delivered':

@@ -33,6 +33,8 @@ class User extends Authenticatable
         'is_online',
         'latitude',
         'longitude',
+        'device_token',
+        'is_blocked',
     ];
 
     /**
@@ -59,6 +61,7 @@ class User extends Authenticatable
             'is_online' => 'boolean',
             'latitude' => 'double',
             'longitude' => 'double',
+            'is_blocked' => 'boolean',
         ];
     }
 

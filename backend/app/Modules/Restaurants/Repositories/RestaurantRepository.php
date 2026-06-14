@@ -27,7 +27,12 @@ class RestaurantRepository
                 $inner->where('category', $categoryName);
             });
         }
-        if (isset($query->filters['is_active']) && $query->filters['is_active'] !== '') {
+        $user = auth('sanctum')->user();
+        $isAdmin = $user && ($user->is_admin || $user->role === 'admin');
+
+        if (!$isAdmin) {
+            $q->where('is_active', true);
+        } elseif (isset($query->filters['is_active']) && $query->filters['is_active'] !== '') {
             $q->where('is_active', filter_var($query->filters['is_active'], FILTER_VALIDATE_BOOLEAN));
         }
 

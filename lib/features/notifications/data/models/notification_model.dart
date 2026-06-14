@@ -9,6 +9,7 @@ class NotificationModel extends NotificationEntity {
     required super.isRead,
     super.restaurantId,
     super.isRated = false,
+    super.orderId,
     required super.createdAt,
   });
 
@@ -21,6 +22,7 @@ class NotificationModel extends NotificationEntity {
       isRead: json['is_read'] ?? false,
       restaurantId: json['restaurant_id'],
       isRated: json['is_rated'] ?? false,
+      orderId: json['order_id'],
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),

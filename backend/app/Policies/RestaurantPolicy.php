@@ -15,6 +15,9 @@ class RestaurantPolicy
 
     public function view(?Authenticatable $user, Restaurant $restaurant): bool
     {
+        if (!$restaurant->is_active) {
+            return $user && ($user->is_admin || $user->role === 'admin');
+        }
         return true;
     }
 

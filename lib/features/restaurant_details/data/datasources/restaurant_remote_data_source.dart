@@ -7,7 +7,7 @@ abstract class RestaurantRemoteDataSource {
   Future<RestaurantDetailModel> getRestaurantDetails(int id);
   Future<bool> toggleFavorite(int id);
   Future<void> submitReview({
-    required int restaurantId,
+    required int orderId,
     required double rating,
     required String comment,
     int? notificationId,
@@ -55,18 +55,19 @@ class RestaurantRemoteDataSourceImpl implements RestaurantRemoteDataSource {
 
   @override
   Future<void> submitReview({
-    required int restaurantId,
+    required int orderId,
     required double rating,
     required String comment,
     int? notificationId,
   }) async {
     try {
       final response = await dioClient.post(
-        '${ApiConstants.restaurants}/$restaurantId/reviews',
+        '/customer/reviews',
         data: {
+          'order_id': orderId,
           'rating': rating,
           'comment': comment,
-          'notification_id':? notificationId,
+          'notification_id': notificationId,
         },
       );
       if (response.statusCode != 200 && response.statusCode != 201) {

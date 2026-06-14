@@ -29,6 +29,9 @@ class CartService
         if (! $product->is_available) {
             throw ValidationException::withMessages(['product_id' => [__('Product is not available.')]]);
         }
+        if (! $product->restaurant || ! $product->restaurant->is_active) {
+            throw ValidationException::withMessages(['product_id' => [__('Restaurant is currently inactive.')]]);
+        }
 
         $cart = $this->carts->getOrCreateForUser($user);
         $options = $options ?? null;

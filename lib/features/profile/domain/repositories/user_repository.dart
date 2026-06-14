@@ -10,4 +10,5 @@ abstract class UserRepository {
   Future<Either<Failure, AddressEntity>> addAddress(AddressEntity address);
   Future<Either<Failure, bool>> deleteAddress(String id);
   Future<Either<Failure, bool>> logout();
+  Future<Either<Failure, Unit>> updateDeviceToken(String token);
 }

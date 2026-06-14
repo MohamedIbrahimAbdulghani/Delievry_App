@@ -28,3 +28,10 @@ class LogoutUseCase {
   LogoutUseCase(this.repository);
   Future<Either<Failure, bool>> call() async => await repository.logout();
 }
+
+class UpdateDeviceTokenUseCase {
+  final UserRepository repository;
+  UpdateDeviceTokenUseCase(this.repository);
+  Future<Either<Failure, Unit>> call(String token) async =>
+      await repository.updateDeviceToken(token);
+}

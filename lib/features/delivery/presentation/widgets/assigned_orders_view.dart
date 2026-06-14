@@ -25,12 +25,9 @@ class _AssignedOrdersViewState extends State<AssignedOrdersView> {
     // Filter out completed history (delivered, failed, cancelled) for this active screen
     final activeStatusList = [
       OrderStatus.pending,
-      OrderStatus.confirmed,
       OrderStatus.preparing,
-      OrderStatus.accepted,
       OrderStatus.heading_to_restaurant,
       OrderStatus.picked_up,
-      OrderStatus.on_the_way,
       OrderStatus.out_for_delivery,
     ];
 
@@ -77,13 +74,13 @@ class _AssignedOrdersViewState extends State<AssignedOrdersView> {
               children: [
                 _buildFilterChip('Active', null),
                 const SizedBox(width: 8),
-                _buildFilterChip('Accepted', OrderStatus.accepted),
+                _buildFilterChip('Preparing', OrderStatus.preparing),
                 const SizedBox(width: 8),
                 _buildFilterChip('Heading to Rest', OrderStatus.heading_to_restaurant),
                 const SizedBox(width: 8),
                 _buildFilterChip('Picked Up', OrderStatus.picked_up),
                 const SizedBox(width: 8),
-                _buildFilterChip('On the Way', OrderStatus.on_the_way),
+                _buildFilterChip('Out for Delivery', OrderStatus.out_for_delivery),
               ],
             ),
           ),
@@ -146,21 +143,21 @@ class _AssignedOrdersViewState extends State<AssignedOrdersView> {
   Color _getStatusColor(OrderStatus status) {
     switch (status) {
       case OrderStatus.pending:
-      case OrderStatus.confirmed:
         return Colors.orange;
-      case OrderStatus.accepted:
+      case OrderStatus.preparing:
         return Colors.blue;
       case OrderStatus.heading_to_restaurant:
         return Colors.teal;
       case OrderStatus.picked_up:
         return Colors.purple;
-      case OrderStatus.on_the_way:
       case OrderStatus.out_for_delivery:
         return Colors.indigo;
       case OrderStatus.delivered:
         return Colors.green;
-      default:
-        return Colors.grey;
+      case OrderStatus.failed:
+        return Colors.redAccent;
+      case OrderStatus.cancelled:
+        return Colors.red;
     }
   }
 
@@ -249,7 +246,7 @@ class _AssignedOrdersViewState extends State<AssignedOrdersView> {
                   const Divider(height: 24),
 
                   // Actions
-                  if (order.status == OrderStatus.confirmed || order.status == OrderStatus.pending) ...[
+                  if (order.status == OrderStatus.pending || order.status == OrderStatus.preparing) ...[
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -260,9 +257,15 @@ class _AssignedOrdersViewState extends State<AssignedOrdersView> {
                         ),
                         onPressed: () {
                           Navigator.pop(ctx);
-                          BlocProvider.of<DeliveryBloc>(context).add(
-                            UpdateDeliveryStatus(orderId: order.id, status: 'accepted'),
-                          );
+                          if (order.status == OrderStatus.preparing) {
+                            BlocProvider.of<DeliveryBloc>(context).add(
+                              AcceptDeliveryEvent(orderId: order.id),
+                            );
+                          } else {
+                            BlocProvider.of<DeliveryBloc>(context).add(
+                              UpdateDeliveryStatus(orderId: order.id, status: 'heading_to_restaurant'),
+                            );
+                          }
                         },
                         child: const Text('Accept Delivery', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),
@@ -313,21 +316,41 @@ class _AssignedOrdersViewState extends State<AssignedOrdersView> {
   }
 
   void _showStatusTransitionDialog(BuildContext context, OrderEntity order) {
+    final List<Widget> tiles = [];
+    final status = order.status;
+
+    if (status == OrderStatus.preparing) {
+      tiles.add(_buildTransitionTile(context, 'Heading to Restaurant', 'heading_to_restaurant', order));
+    } else if (status == OrderStatus.heading_to_restaurant) {
+      tiles.add(_buildTransitionTile(context, 'Food Picked Up', 'picked_up', order));
+      tiles.add(_buildTransitionTile(context, 'Reject Assignment', 'preparing', order));
+    } else if (status == OrderStatus.picked_up) {
+      tiles.add(_buildTransitionTile(context, 'Out for Delivery', 'out_for_delivery', order));
+      tiles.add(_buildTransitionTile(context, 'Failed Delivery', 'failed', order));
+    } else if (status == OrderStatus.out_for_delivery) {
+      tiles.add(_buildTransitionTile(context, 'Mark as Delivered', 'delivered', order));
+      tiles.add(_buildTransitionTile(context, 'Failed Delivery', 'failed', order));
+    }
+
+    // Always allow cancellation if not completed
+    if (status != OrderStatus.delivered && status != OrderStatus.failed && status != OrderStatus.cancelled) {
+      tiles.add(_buildTransitionTile(context, 'Cancel Order', 'cancelled', order));
+    }
+
     showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
           title: Text('Transition Status for #${order.id}'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildTransitionTile(context, 'Heading to Restaurant', 'heading_to_restaurant', order),
-              _buildTransitionTile(context, 'Food Picked Up', 'picked_up', order),
-              _buildTransitionTile(context, 'On the Way', 'on_the_way', order),
-              _buildTransitionTile(context, 'Mark as Delivered', 'delivered', order),
-              _buildTransitionTile(context, 'Failed Delivery', 'failed', order),
-            ],
-          ),
+          content: tiles.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                  child: Text('No further transitions possible for this order.'),
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: tiles,
+                ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),

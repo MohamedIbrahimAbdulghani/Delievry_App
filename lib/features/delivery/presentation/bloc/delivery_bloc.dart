@@ -9,6 +9,7 @@ import '../../domain/usecases/update_driver_location_usecase.dart';
 import '../../domain/usecases/toggle_availability_usecase.dart';
 import '../../domain/usecases/get_driver_earnings_usecase.dart';
 import '../../domain/usecases/get_delivery_history_usecase.dart';
+import '../../domain/usecases/accept_order_usecase.dart';
 import 'delivery_event.dart';
 import 'delivery_state.dart';
 
@@ -19,6 +20,7 @@ class DeliveryBloc extends Bloc<DeliveryEvent, DeliveryState> {
   final ToggleAvailabilityUseCase toggleAvailabilityUseCase;
   final GetDriverEarningsUseCase getDriverEarningsUseCase;
   final GetDeliveryHistoryUseCase getDeliveryHistoryUseCase;
+  final AcceptOrderUseCase acceptOrderUseCase;
   final SessionManager sessionManager;
 
   DeliveryLoaded? _lastLoadedState;
@@ -30,6 +32,7 @@ class DeliveryBloc extends Bloc<DeliveryEvent, DeliveryState> {
     required this.toggleAvailabilityUseCase,
     required this.getDriverEarningsUseCase,
     required this.getDeliveryHistoryUseCase,
+    required this.acceptOrderUseCase,
     required this.sessionManager,
   }) : super(DeliveryInitial()) {
     on<FetchAssignedOrders>(_onFetchAssignedOrders);
@@ -38,6 +41,7 @@ class DeliveryBloc extends Bloc<DeliveryEvent, DeliveryState> {
     on<ToggleAvailability>(_onToggleAvailability);
     on<FetchDriverEarnings>(_onFetchDriverEarnings);
     on<FetchDeliveryHistory>(_onFetchDeliveryHistory);
+    on<AcceptDeliveryEvent>(_onAcceptDelivery);
   }
 
   Future<void> _fetchDataHelper(Emitter<DeliveryState> emit) async {
@@ -136,5 +140,20 @@ class DeliveryBloc extends Bloc<DeliveryEvent, DeliveryState> {
   Future<void> _onFetchDeliveryHistory(FetchDeliveryHistory event, Emitter<DeliveryState> emit) async {
     emit(DeliveryLoading());
     await _fetchDataHelper(emit);
+  }
+
+  Future<void> _onAcceptDelivery(AcceptDeliveryEvent event, Emitter<DeliveryState> emit) async {
+    emit(DeliveryLoading());
+    final result = await acceptOrderUseCase(event.orderId);
+    await result.fold(
+      (failure) async {
+        emit(DeliveryError(failure.message));
+        if (_lastLoadedState != null) emit(_lastLoadedState!);
+      },
+      (order) async {
+        emit(const DeliveryActionSuccess('Order accepted successfully'));
+        await _fetchDataHelper(emit);
+      },
+    );
   }
 }

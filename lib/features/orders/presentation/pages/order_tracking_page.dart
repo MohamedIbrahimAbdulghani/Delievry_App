@@ -172,23 +172,61 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
   }
 
   Widget _buildTrackingInfo(OrderEntity order) {
-    debugPrint('Order status: ${order.status}');
-    final status = order.status.toString().split('.').last.toLowerCase();
-    String statusTitle = 'Preparing your order';
-    String statusDesc = 'The restaurant is preparing your food.';
-    double progress = 0.3;
-    IconData statusIcon = Icons.restaurant;
+    final status = order.status;
+    String statusTitle = 'Order Submitted';
+    String statusDesc = 'Waiting for restaurant approval.';
+    double progress = 0.125;
+    IconData statusIcon = Icons.receipt_long_rounded;
 
-    if (status == 'picked_up' || status == 'on_the_way' || status == 'out_for_delivery') {
-      statusTitle = 'Order is on the way';
-      statusDesc = 'Your delivery partner is heading to you.';
-      progress = 0.7;
-      statusIcon = Icons.delivery_dining;
-    } else if (status == 'delivered' || status == 'completed') {
-      statusTitle = 'Order Delivered';
-      statusDesc = 'Enjoy your meal!';
-      progress = 1.0;
-      statusIcon = Icons.check_circle;
+    switch (status) {
+      case OrderStatus.pending:
+        statusTitle = 'Order Submitted';
+        statusDesc = 'Waiting for restaurant approval.';
+        progress = 0.125;
+        statusIcon = Icons.receipt_long_rounded;
+        break;
+      case OrderStatus.preparing:
+        statusTitle = 'Preparing your order';
+        statusDesc = 'The restaurant is preparing your food.';
+        progress = 0.25;
+        statusIcon = Icons.restaurant_rounded;
+        break;
+      case OrderStatus.heading_to_restaurant:
+        statusTitle = 'Heading to Restaurant';
+        statusDesc = 'A delivery partner is heading to pick up your order.';
+        progress = 0.375;
+        statusIcon = Icons.directions_run_rounded;
+        break;
+      case OrderStatus.picked_up:
+        statusTitle = 'Order Picked Up';
+        statusDesc = 'Driver has collected your food and is preparing delivery.';
+        progress = 0.5;
+        statusIcon = Icons.local_shipping_rounded;
+        break;
+      case OrderStatus.out_for_delivery:
+        statusTitle = 'Out for Delivery';
+        statusDesc = 'Driver is on the way to your location.';
+        progress = 0.75;
+        statusIcon = Icons.delivery_dining_rounded;
+        break;
+      case OrderStatus.delivered:
+        statusTitle = 'Order Delivered';
+        statusDesc = 'Enjoy your meal!';
+        progress = 1.0;
+        statusIcon = Icons.check_circle_rounded;
+        break;
+      case OrderStatus.failed:
+        statusTitle = 'Delivery Failed';
+        statusDesc = 'There was an issue delivering your order.';
+        progress = 1.0;
+        statusIcon = Icons.error_outline_rounded;
+        break;
+      case OrderStatus.cancelled:
+        statusTitle = 'Order Cancelled';
+        statusDesc = 'This order was cancelled.';
+        progress = 1.0;
+        statusIcon = Icons.cancel_outlined;
+        break;
     }
 
     return Positioned(

@@ -31,4 +31,57 @@ class NotificationController extends Controller
         $updated = $this->notificationService->markAsRead($notification);
         return ApiResponse::success(new NotificationResource($updated), __('Notification marked as read.'));
     }
+
+    public function markAllAsRead(Request $request): JsonResponse
+    {
+        $this->notificationService->markAllAsReadForUser($request->user());
+        return ApiResponse::success(null, __('All notifications marked as read.'));
+    }
+
+    public function stream(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $response = new \Symfony\Component\HttpFoundation\StreamedResponse(function () use ($request) {
+            $user = $request->user();
+            $lastId = (int) $request->query('last_id', 0);
+            
+            set_time_limit(0);
+            
+            if (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+            
+            echo "data: " . json_encode(['connected' => true]) . "\n\n";
+            ob_flush();
+            flush();
+            
+            while (true) {
+                if (connection_aborted()) {
+                    break;
+                }
+                
+                $notifications = Notification::where('user_id', $user->id)
+                    ->where('id', '>', $lastId)
+                    ->orderBy('id', 'asc')
+                    ->get();
+                    
+                if ($notifications->isNotEmpty()) {
+                    foreach ($notifications as $notification) {
+                        echo "data: " . json_encode(new NotificationResource($notification)) . "\n\n";
+                        $lastId = $notification->id;
+                    }
+                    ob_flush();
+                    flush();
+                }
+                
+                sleep(2);
+            }
+        });
+        
+        $response->headers->set('Content-Type', 'text/event-stream');
+        $response->headers->set('Cache-Control', 'no-cache');
+        $response->headers->set('Connection', 'keep-alive');
+        $response->headers->set('X-Accel-Buffering', 'no');
+        
+        return $response;
+    }
 }

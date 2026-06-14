@@ -244,7 +244,7 @@ class _DeliveryTrackingPageState extends State<DeliveryTrackingPage> {
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                       ),
                       Text(
-                        order.status == OrderStatus.picked_up
+                        (order.status == OrderStatus.picked_up || order.status == OrderStatus.out_for_delivery)
                             ? 'Delivering to customer'
                             : 'Heading to restaurant',
                         style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
@@ -297,21 +297,41 @@ class _DeliveryTrackingPageState extends State<DeliveryTrackingPage> {
   }
 
   void _showStatusTransitionDialog(BuildContext context, OrderEntity order) {
+    final List<Widget> tiles = [];
+    final status = order.status;
+
+    if (status == OrderStatus.preparing) {
+      tiles.add(_buildTransitionTile(context, 'Heading to Restaurant', 'heading_to_restaurant', order));
+    } else if (status == OrderStatus.heading_to_restaurant) {
+      tiles.add(_buildTransitionTile(context, 'Food Picked Up', 'picked_up', order));
+      tiles.add(_buildTransitionTile(context, 'Reject Assignment', 'preparing', order));
+    } else if (status == OrderStatus.picked_up) {
+      tiles.add(_buildTransitionTile(context, 'Out for Delivery', 'out_for_delivery', order));
+      tiles.add(_buildTransitionTile(context, 'Failed Delivery', 'failed', order));
+    } else if (status == OrderStatus.out_for_delivery) {
+      tiles.add(_buildTransitionTile(context, 'Mark as Delivered', 'delivered', order));
+      tiles.add(_buildTransitionTile(context, 'Failed Delivery', 'failed', order));
+    }
+
+    // Always allow cancellation if not completed
+    if (status != OrderStatus.delivered && status != OrderStatus.failed && status != OrderStatus.cancelled) {
+      tiles.add(_buildTransitionTile(context, 'Cancel Order', 'cancelled', order));
+    }
+
     showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
           title: Text('Transition Status for #${order.id}'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildTransitionTile(context, 'Heading to Restaurant', 'heading_to_restaurant', order),
-              _buildTransitionTile(context, 'Food Picked Up', 'picked_up', order),
-              _buildTransitionTile(context, 'On the Way', 'on_the_way', order),
-              _buildTransitionTile(context, 'Mark as Delivered', 'delivered', order),
-              _buildTransitionTile(context, 'Failed Delivery', 'failed', order),
-            ],
-          ),
+          content: tiles.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                  child: Text('No further transitions possible for this order.'),
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: tiles,
+                ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),

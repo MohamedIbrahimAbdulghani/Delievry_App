@@ -29,11 +29,17 @@ class UserService
 
     public function create(array $data): UserResource
     {
+        $role = $data['role'] ?? 'customer';
+        $isAdmin = $data['is_admin'] ?? ($role === 'admin');
+
         $user = User::query()->create([
             'name' => $data['name'],
             'email' => $data['email'],
+            'phone' => $data['phone'] ?? null,
             'password' => $data['password'],
-            'is_admin' => $data['is_admin'] ?? false,
+            'role' => $role,
+            'is_admin' => $isAdmin,
+            'is_blocked' => $data['is_blocked'] ?? false,
         ]);
 
         return new UserResource($user);
@@ -43,6 +49,20 @@ class UserService
     {
         if (array_key_exists('is_admin', $data) && ! $actor->is_admin) {
             unset($data['is_admin']);
+        }
+
+        if (array_key_exists('role', $data)) {
+            if ($data['role'] === 'admin') {
+                if ($actor->is_admin) {
+                    $data['is_admin'] = true;
+                }
+            } else {
+                if ($actor->is_admin) {
+                    $data['is_admin'] = false;
+                }
+            }
+        } elseif (array_key_exists('is_admin', $data)) {
+            $data['role'] = $data['is_admin'] ? 'admin' : 'customer';
         }
 
         $password = $data['password'] ?? null;

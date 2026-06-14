@@ -8,13 +8,13 @@ class SubmitReviewUseCase {
   SubmitReviewUseCase(this.repository);
 
   Future<Either<Failure, Unit>> call({
-    required int restaurantId,
+    required int orderId,
     required double rating,
     required String comment,
     int? notificationId,
   }) async {
     return await repository.submitReview(
-      restaurantId: restaurantId,
+      orderId: orderId,
       rating: rating,
       comment: comment,
       notificationId: notificationId,

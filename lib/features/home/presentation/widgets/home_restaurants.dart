@@ -159,17 +159,9 @@ class HomeRestaurants extends StatelessWidget {
                                 const Icon(Icons.star, size: 16, color: Color(0xFFFFB68B)), // Matching vibrant golden/orange
                                 const SizedBox(width: 6),
                                 Text(
-                                  '4.5', // Placeholder rating
+                                  restaurant.rating.toString(),
                                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(width: 2),
-                                Text(
-                                  '(100+)',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 12,
                                   ),
                                 ),
                               ],

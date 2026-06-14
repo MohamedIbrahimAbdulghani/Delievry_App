@@ -15,6 +15,7 @@ class Notification extends Model
         'is_read',
         'restaurant_id',
         'is_rated',
+        'order_id',
     ];
 
     protected function casts(): array

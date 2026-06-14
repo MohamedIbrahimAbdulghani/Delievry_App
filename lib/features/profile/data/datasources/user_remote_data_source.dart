@@ -10,6 +10,7 @@ abstract class UserRemoteDataSource {
   Future<AddressModel> addAddress(AddressModel address);
   Future<bool> deleteAddress(String id);
   Future<bool> logout();
+  Future<void> updateDeviceToken(String token);
 }
 
 class UserRemoteDataSourceImpl implements UserRemoteDataSource {
@@ -83,5 +84,17 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
       await dioClient.secureStorage.delete(key: 'token');
     }
     return true;
+  }
+
+  @override
+  Future<void> updateDeviceToken(String token) async {
+    try {
+      final response = await dioClient.post('/user/device-token', data: {'device_token': token});
+      if (response.statusCode != 200) {
+        throw ServerException(response.data['message'] ?? 'Failed to update device token');
+      }
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
   }
 }

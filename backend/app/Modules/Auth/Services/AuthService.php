@@ -42,6 +42,14 @@ class AuthService
 
         /** @var User $user */
         $user = Auth::user();
+
+        if ($user->is_blocked) {
+            Auth::logout();
+            throw ValidationException::withMessages([
+                'email' => [__('Your account has been deactivated.')],
+            ]);
+        }
+
         $user->tokens()->delete();
         $token = $user->createToken('api')->plainTextToken;
 

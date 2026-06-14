@@ -4,18 +4,15 @@ import '../../../profile/domain/entities/user_profile_entity.dart';
 import 'order_item_entity.dart';
 
 // ignore: constant_identifier_names
-enum OrderStatus { pending, confirmed, preparing, accepted, heading_to_restaurant, picked_up, on_the_way, out_for_delivery, delivered, failed, cancelled }
+enum OrderStatus { pending, preparing, heading_to_restaurant, picked_up, out_for_delivery, delivered, failed, cancelled }
 
 extension OrderStatusX on OrderStatus {
   String get apiValue {
     switch (this) {
       case OrderStatus.pending: return 'pending';
-      case OrderStatus.confirmed: return 'confirmed';
       case OrderStatus.preparing: return 'preparing';
-      case OrderStatus.accepted: return 'accepted';
       case OrderStatus.heading_to_restaurant: return 'heading_to_restaurant';
       case OrderStatus.picked_up: return 'picked_up';
-      case OrderStatus.on_the_way: return 'on_the_way';
       case OrderStatus.out_for_delivery: return 'out_for_delivery';
       case OrderStatus.delivered: return 'delivered';
       case OrderStatus.failed: return 'failed';
@@ -26,12 +23,9 @@ extension OrderStatusX on OrderStatus {
   String get displayName {
     switch (this) {
       case OrderStatus.pending: return 'Pending';
-      case OrderStatus.confirmed: return 'Confirmed';
       case OrderStatus.preparing: return 'Preparing';
-      case OrderStatus.accepted: return 'Accepted';
       case OrderStatus.heading_to_restaurant: return 'Heading to Restaurant';
       case OrderStatus.picked_up: return 'Picked Up';
-      case OrderStatus.on_the_way: return 'On the Way';
       case OrderStatus.out_for_delivery: return 'Out for Delivery';
       case OrderStatus.delivered: return 'Delivered';
       case OrderStatus.failed: return 'Failed';

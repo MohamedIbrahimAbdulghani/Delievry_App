@@ -147,7 +147,49 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                 ],
               );
             } else if (state is ProductDetailError) {
-              return Center(child: Text(state.message));
+              return Scaffold(
+                appBar: AppBar(
+                  backgroundColor: Colors.white,
+                  elevation: 0,
+                  leading: IconButton(
+                    icon: const Icon(Icons.arrow_back, color: AppColors.onBackground),
+                    onPressed: () => context.pop(),
+                  ),
+                  title: const Text('Meal Details', style: TextStyle(color: AppColors.onBackground)),
+                ),
+                body: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.restaurant_menu_outlined, size: 80, color: AppColors.primary),
+                        const SizedBox(height: 24),
+                        const Text(
+                          'Meal Unavailable',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.onBackground,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          state.message.contains('Forbidden') || state.message.contains('403')
+                              ? 'This meal is currently unavailable or belongs to an inactive restaurant.'
+                              : state.message,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: AppColors.textSecondary,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
             }
             return const SizedBox.shrink();
           },

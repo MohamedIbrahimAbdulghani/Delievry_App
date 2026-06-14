@@ -8,6 +8,7 @@ Route::get('/restaurants/{restaurant}', [RestaurantController::class, 'show']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/restaurants/{restaurant}/reviews', [RestaurantController::class, 'storeReview']);
+    Route::post('/customer/reviews', [RestaurantController::class, 'storeCustomerReview']);
 });
 
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {

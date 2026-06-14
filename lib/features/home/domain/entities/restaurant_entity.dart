@@ -11,6 +11,8 @@ class RestaurantEntity extends Equatable {
   final bool isActive;
   final String? imageUrl;
   final bool isFavorite;
+  final double rating;
+  final int totalReviews;
 
   const RestaurantEntity({
     required this.id,
@@ -23,6 +25,8 @@ class RestaurantEntity extends Equatable {
     required this.isActive,
     this.imageUrl,
     this.isFavorite = false,
+    this.rating = 4.5,
+    this.totalReviews = 0,
   });
 
   RestaurantEntity copyWith({
@@ -36,6 +40,8 @@ class RestaurantEntity extends Equatable {
     bool? isActive,
     String? imageUrl,
     bool? isFavorite,
+    double? rating,
+    int? totalReviews,
   }) {
     return RestaurantEntity(
       id: id ?? this.id,
@@ -48,6 +54,8 @@ class RestaurantEntity extends Equatable {
       isActive: isActive ?? this.isActive,
       imageUrl: imageUrl ?? this.imageUrl,
       isFavorite: isFavorite ?? this.isFavorite,
+      rating: rating ?? this.rating,
+      totalReviews: totalReviews ?? this.totalReviews,
     );
   }
 
@@ -63,5 +71,7 @@ class RestaurantEntity extends Equatable {
         isActive,
         imageUrl,
         isFavorite,
+        rating,
+        totalReviews,
       ];
 }

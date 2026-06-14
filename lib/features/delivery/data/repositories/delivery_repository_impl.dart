@@ -82,4 +82,16 @@ class DeliveryRepositoryImpl implements DeliveryRepository {
       return Left(ServerFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, OrderEntity>> acceptOrder(int orderId) async {
+    try {
+      final result = await remoteDataSource.acceptOrder(orderId);
+      return Right(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
 }

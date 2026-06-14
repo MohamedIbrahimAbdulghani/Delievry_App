@@ -264,17 +264,7 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
       if (response.statusCode == 200) {
         final data = response.data['data'];
         final List list = data != null ? (data['items'] ?? []) : [];
-        
-        final prefs = await SharedPreferences.getInstance();
-        final blockedIds = prefs.getStringList('blocked_users') ?? [];
-
-        return list.map((json) {
-          final user = UserModel.fromJson(Map<String, dynamic>.from(json));
-          if (blockedIds.contains(user.id.toString())) {
-            return user.copyWith(isBlocked: true);
-          }
-          return user;
-        }).toList();
+        return list.map((json) => UserModel.fromJson(Map<String, dynamic>.from(json))).toList();
       }
       throw Exception('Failed to load users');
     } catch (e) {
@@ -298,45 +288,14 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
   @override
   Future<UserModel> updateUser(int id, Map<String, dynamic> data) async {
     try {
-      if (data.containsKey('is_blocked')) {
-        final isBlocked = data['is_blocked'] as bool;
-        final prefs = await SharedPreferences.getInstance();
-        final blockedIds = prefs.getStringList('blocked_users') ?? [];
-        if (isBlocked) {
-          if (!blockedIds.contains(id.toString())) {
-            blockedIds.add(id.toString());
-          }
-        } else {
-          blockedIds.remove(id.toString());
-        }
-        await prefs.setStringList('blocked_users', blockedIds);
+      final response = await dioClient.put(
+        '/users/$id',
+        data: data,
+      );
+      if (response.statusCode == 200) {
+        return UserModel.fromJson(response.data['data']);
       }
-
-      final backendData = Map<String, dynamic>.from(data)..remove('is_blocked');
-      UserModel user;
-
-      if (backendData.isNotEmpty) {
-        final response = await dioClient.put(
-          '/users/$id',
-          data: backendData,
-        );
-        if (response.statusCode == 200) {
-          user = UserModel.fromJson(response.data['data']);
-        } else {
-          throw Exception(response.data['message'] ?? 'Failed to update user');
-        }
-      } else {
-        final response = await dioClient.get('/users/$id');
-        if (response.statusCode == 200) {
-          user = UserModel.fromJson(response.data['data']);
-        } else {
-          throw Exception('Failed to fetch user');
-        }
-      }
-
-      final prefs = await SharedPreferences.getInstance();
-      final blockedIds = prefs.getStringList('blocked_users') ?? [];
-      return user.copyWith(isBlocked: blockedIds.contains(id.toString()));
+      throw Exception(response.data['message'] ?? 'Failed to update user');
     } catch (e) {
       throw Exception('Failed to update user: $e');
     }

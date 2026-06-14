@@ -4,6 +4,7 @@ class UserEntity extends Equatable {
   final int id;
   final String name;
   final String email;
+  final String? phone;
   final bool isAdmin;
   final bool isBlocked;
   final String role;
@@ -15,6 +16,7 @@ class UserEntity extends Equatable {
     required this.id,
     required this.name,
     required this.email,
+    this.phone,
     required this.isAdmin,
     this.isBlocked = false,
     this.role = 'customer',
@@ -28,6 +30,7 @@ class UserEntity extends Equatable {
         id,
         name,
         email,
+        phone,
         isAdmin,
         isBlocked,
         role,

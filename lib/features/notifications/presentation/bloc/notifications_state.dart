@@ -29,3 +29,7 @@ class NotificationsError extends NotificationsState {
   @override
   List<Object?> get props => [message];
 }
+
+class RatingSubmitting extends NotificationsState {}
+
+class RatingSuccess extends NotificationsState {}

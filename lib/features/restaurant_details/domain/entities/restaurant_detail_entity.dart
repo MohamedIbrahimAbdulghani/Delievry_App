@@ -6,8 +6,6 @@ class RestaurantDetailEntity extends RestaurantEntity {
   final List<MealEntity> products;
   final List<ReviewEntity> reviews;
   final List<String> categories;
-  final double rating;
-  final int totalReviews;
 
   const RestaurantDetailEntity({
     required super.id,
@@ -22,8 +20,8 @@ class RestaurantDetailEntity extends RestaurantEntity {
     required this.products,
     required this.reviews,
     required this.categories,
-    required this.rating,
-    required this.totalReviews,
+    required super.rating,
+    required super.totalReviews,
   });
 
   @override
@@ -32,7 +30,5 @@ class RestaurantDetailEntity extends RestaurantEntity {
         products,
         reviews,
         categories,
-        rating,
-        totalReviews,
       ];
 }

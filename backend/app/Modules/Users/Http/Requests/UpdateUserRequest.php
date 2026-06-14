@@ -25,6 +25,9 @@ class UpdateUserRequest extends FormRequest
             'email' => ['sometimes', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
             'password' => ['sometimes', 'nullable', 'string', 'min:8', 'confirmed'],
             'is_admin' => ['sometimes', 'boolean'],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'role' => ['sometimes', 'string', 'in:customer,delivery,admin'],
+            'is_blocked' => ['sometimes', 'boolean'],
         ];
     }
 }
