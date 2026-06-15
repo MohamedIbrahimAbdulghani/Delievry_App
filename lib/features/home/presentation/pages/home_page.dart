@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/branded_loader.dart';
 import '../../../../di/injection_container.dart';
 import '../bloc/home_bloc.dart';
 import '../bloc/home_event.dart';
@@ -25,6 +26,9 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late HomeBloc _homeBloc;
   final ScrollController _scrollController = ScrollController();
+  
+  HomeLoaded? _preCachedState;
+  bool _isPreCaching = false;
 
   @override
   void initState() {
@@ -43,6 +47,59 @@ class _HomePageState extends State<HomePage> {
     if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
       _homeBloc.add(FetchMoreRestaurants());
       _homeBloc.add(FetchMoreMeals());
+    }
+  }
+
+  String _resolveImageUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    if (url.startsWith('http')) return url;
+    return 'http://10.0.2.2:8000/storage/$url';
+  }
+
+  Future<void> _preCacheAllImages(HomeLoaded state) async {
+    if (!mounted) return;
+    setState(() {
+      _isPreCaching = true;
+    });
+
+    final List<Future<void>> cacheFutures = [];
+    final List<String> imageUrls = [];
+
+    for (var banner in state.banners) {
+      if (banner.imageUrl.isNotEmpty) {
+        imageUrls.add(banner.imageUrl);
+      }
+    }
+    for (var restaurant in state.restaurants) {
+      if (restaurant.imageUrl != null && restaurant.imageUrl!.isNotEmpty) {
+        imageUrls.add(_resolveImageUrl(restaurant.imageUrl));
+      }
+    }
+
+    for (var url in imageUrls) {
+      final imageProvider = NetworkImage(url);
+      cacheFutures.add(
+        precacheImage(imageProvider, context).catchError((error) {
+          debugPrint('Failed to precache image: $url. Error: $error');
+        }),
+      );
+    }
+
+    if (cacheFutures.isNotEmpty) {
+      await Future.wait(cacheFutures).timeout(
+        const Duration(milliseconds: 1500),
+        onTimeout: () {
+          debugPrint('Pre-caching images timed out, showing Home content anyway to avoid long loading screen.');
+          return [];
+        },
+      );
+    }
+
+    if (mounted) {
+      setState(() {
+        _preCachedState = state;
+        _isPreCaching = false;
+      });
     }
   }
 
@@ -146,45 +203,64 @@ class _HomePageState extends State<HomePage> {
           onRefresh: () async {
             _homeBloc.add(RefreshHomeData());
           },
-          child: BlocBuilder<HomeBloc, HomeState>(
-            builder: (context, state) {
+          child: BlocConsumer<HomeBloc, HomeState>(
+            listener: (context, state) {
               if (state is HomeLoading) {
-                return const HomeSkeleton();
-              } else if (state is HomeLoaded) {
-                return SingleChildScrollView(
-                  controller: _scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const HomeSearchBar(),
-                      HomeBanners(banners: state.banners),
-                      HomeCategories(
-                        categories: state.categories,
-                        selectedCategoryId: state.selectedCategoryId,
-                      ),
-                      HomeRestaurants(restaurants: state.restaurants),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                );
-              } else if (state is HomeError) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(state.message),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () => _homeBloc.add(FetchHomeData()),
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                        child: const Text('Retry', style: TextStyle(color: Colors.white)),
-                      ),
-                    ],
-                  ),
-                );
+                _preCachedState = null;
+              } else if (state is HomeLoaded && state != _preCachedState && !_isPreCaching) {
+                _preCacheAllImages(state);
               }
-              return const SizedBox.shrink();
+            },
+            builder: (context, state) {
+              final isLoading = state is HomeLoading || (state is HomeLoaded && _preCachedState == null);
+              
+              return Stack(
+                children: [
+                  if (isLoading)
+                    const HomeSkeleton()
+                  else if (state is HomeLoaded)
+                    SingleChildScrollView(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const HomeSearchBar(),
+                          HomeBanners(banners: state.banners),
+                          HomeCategories(
+                            categories: state.categories,
+                            selectedCategoryId: state.selectedCategoryId,
+                          ),
+                          HomeRestaurants(restaurants: state.restaurants),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
+                    )
+                  else if (state is HomeError)
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(state.message),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () => _homeBloc.add(FetchHomeData()),
+                            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+                            child: const Text('Retry', style: TextStyle(color: Colors.white)),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    const SizedBox.shrink(),
+                  
+                  if (isLoading)
+                    const BrandedLoader(
+                      isOverlay: true,
+                      initialMessage: 'Preparing Your Experience...',
+                    ),
+                ],
+              );
             },
           ),
         ),

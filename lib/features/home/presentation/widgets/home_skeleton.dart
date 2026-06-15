@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import '../../../../core/widgets/shimmer.dart';
 
 class HomeSkeleton extends StatelessWidget {
   const HomeSkeleton({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Shimmer(
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Search Bar Skeleton
           Padding(
@@ -71,8 +73,9 @@ class HomeSkeleton extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class SkeletonBox extends StatelessWidget {
