@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/custom_toastr.dart';
 import '../../../../di/injection_container.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../bloc/delivery_bloc.dart';
@@ -282,8 +283,9 @@ class _DeliveryTrackingPageState extends State<DeliveryTrackingPage> {
                   child: IconButton(
                     icon: const Icon(Icons.phone, color: AppColors.primary),
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Calling customer...')),
+                      context.showInfoToast(
+                        title: 'Calling Customer',
+                        message: 'Calling customer...',
                       );
                     },
                   ),

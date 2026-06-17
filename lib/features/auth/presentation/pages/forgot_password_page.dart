@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/primary_button.dart';
+import '../../../../core/widgets/custom_toastr.dart';
 import '../../../../di/injection_container.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
@@ -42,8 +43,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 if (state is ForgotPasswordEmailSent) {
                   context.push('/verify-otp', extra: _emailController.text);
                 } else if (state is AuthFailure) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(state.message)),
+                  context.showErrorToast(
+                    title: 'Error Sending OTP',
+                    message: state.message,
                   );
                 }
               },

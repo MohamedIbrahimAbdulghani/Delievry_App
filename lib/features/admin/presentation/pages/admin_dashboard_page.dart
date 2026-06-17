@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/custom_toastr.dart';
 import '../../../../di/injection_container.dart';
 import '../../../../core/auth/session_manager.dart';
 import '../../../../core/network/dio_client.dart';
@@ -130,26 +131,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   setState(() {
                     _notifications.insert(0, notification);
                   });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(notification.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text(notification.body),
-                        ],
-                      ),
-                      backgroundColor: AppColors.primary,
-                      duration: const Duration(seconds: 4),
-                      action: SnackBarAction(
-                        label: 'View',
-                        textColor: Colors.white,
-                        onPressed: () {
-                          _scaffoldKey.currentState?.openEndDrawer();
-                        },
-                      ),
-                    ),
+                  context.showInfoToast(
+                    title: notification.title,
+                    message: notification.body,
+                    duration: const Duration(seconds: 4),
                   );
                 }
               } catch (e) {
@@ -385,12 +370,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               child: BlocListener<AdminBloc, AdminState>(
                 listener: (context, state) {
                   if (state is AdminActionSuccess) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(state.message), backgroundColor: Colors.green),
+                    context.showSuccessToast(
+                      title: 'Success',
+                      message: state.message,
                     );
                   } else if (state is AdminActionFailure) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+                    context.showErrorToast(
+                      title: 'Error',
+                      message: state.message,
                     );
                   }
                 },
@@ -2824,8 +2811,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   ElevatedButton.icon(
                     onPressed: () {
                       if (promoController.text.isNotEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Broadcast Notification Sent: "${promoController.text}"')),
+                        context.showSuccessToast(
+                          title: 'Broadcast Sent',
+                          message: 'Broadcast Notification Sent: "${promoController.text}"',
                         );
                         promoController.clear();
                       }

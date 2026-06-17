@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/custom_toastr.dart';
 import '../../../../di/injection_container.dart';
 import '../../../../core/events/order_events.dart';
 import '../../../cart/presentation/bloc/cart_bloc.dart';
@@ -66,15 +67,17 @@ class _OrdersHistoryPageState extends State<OrdersHistoryPage> with SingleTicker
         body: BlocConsumer<OrdersBloc, OrdersState>(
           listener: (context, state) {
             if (state is ReorderSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Order recreated in cart successfully!')),
+              context.showSuccessToast(
+                title: 'Order Recreated',
+                message: 'Order recreated in cart successfully!',
               );
               context.read<CartBloc>().add(FetchCart());
               _bloc.add(FetchOrders());
               context.go('/cart');
             } else if (state is OrdersError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.message)),
+              context.showErrorToast(
+                title: 'Order Error',
+                message: state.message,
               );
             }
           },

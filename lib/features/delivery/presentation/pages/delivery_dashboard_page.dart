@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/custom_toastr.dart';
 import '../../../../di/injection_container.dart';
 import '../bloc/delivery_bloc.dart';
 import '../bloc/delivery_event.dart';
@@ -52,12 +53,14 @@ class _DeliveryDashboardPageState extends State<DeliveryDashboardPage> {
       child: BlocListener<DeliveryBloc, DeliveryState>(
         listener: (context, state) {
           if (state is DeliveryActionSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.green),
+            context.showSuccessToast(
+              title: 'Success',
+              message: state.message,
             );
           } else if (state is DeliveryError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+            context.showErrorToast(
+              title: 'Error',
+              message: state.message,
             );
           }
         },

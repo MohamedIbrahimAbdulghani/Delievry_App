@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/custom_toastr.dart';
 import '../../../../di/injection_container.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
@@ -59,10 +60,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
         body: BlocConsumer<ProfileBloc, ProfileState>(
           listener: (context, state) {
             if (state is ProfileLoaded) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated!')));
+              context.showSuccessToast(
+                title: 'Profile Updated',
+                message: 'Your profile has been updated successfully!',
+              );
               context.pop();
             } else if (state is ProfileError) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
+              context.showErrorToast(
+                title: 'Update Failed',
+                message: state.message,
+              );
             }
           },
           builder: (context, state) {

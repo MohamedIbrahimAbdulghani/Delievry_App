@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/custom_toastr.dart';
 import '../../../../di/injection_container.dart';
 import '../../domain/entities/order_entity.dart';
 import '../bloc/orders_bloc.dart';
@@ -48,8 +49,9 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
         body: BlocConsumer<OrdersBloc, OrdersState>(
           listener: (context, state) {
             if (state is OrdersError && _lastOrder != null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Failed to update tracking: ${state.message}')),
+              context.showErrorToast(
+                title: 'Tracking Error',
+                message: 'Failed to update tracking: ${state.message}',
               );
             }
           },
@@ -301,8 +303,9 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                     if (order.driver == null ||
                         order.driver!.phone == null ||
                         order.driver!.phone!.trim().isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Driver information is not available yet.')),
+                      context.showWarningToast(
+                        title: 'Driver Unavailable',
+                        message: 'Driver information is not available yet.',
                       );
                       return;
                     }
@@ -313,15 +316,17 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                         await launchUrl(phoneUri);
                       } else {
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Could not open phone dialer.')),
+                          context.showErrorToast(
+                            title: 'Call Error',
+                            message: 'Could not open phone dialer.',
                           );
                         }
                       }
                     } catch (e) {
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error opening dialer: $e')),
+                        context.showErrorToast(
+                          title: 'Call Error',
+                          message: 'Error opening dialer: $e',
                         );
                       }
                     }

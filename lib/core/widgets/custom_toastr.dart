@@ -4,6 +4,8 @@ import '../theme/app_colors.dart';
 enum ToastrType { success, error, warning, info }
 
 class CustomToastr {
+  static OverlayEntry? _currentEntry;
+
   static void show(
     BuildContext context, {
     required String title,
@@ -11,6 +13,13 @@ class CustomToastr {
     required ToastrType type,
     Duration duration = const Duration(seconds: 3),
   }) {
+    if (_currentEntry != null) {
+      try {
+        _currentEntry!.remove();
+      } catch (_) {}
+      _currentEntry = null;
+    }
+
     final overlay = Overlay.of(context, rootOverlay: true);
     late OverlayEntry entry;
 
@@ -22,12 +31,18 @@ class CustomToastr {
           type: type,
           duration: duration,
           onDismiss: () {
-            entry.remove();
+            try {
+              entry.remove();
+            } catch (_) {}
+            if (_currentEntry == entry) {
+              _currentEntry = null;
+            }
           },
         );
       },
     );
 
+    _currentEntry = entry;
     overlay.insert(entry);
   }
 
@@ -195,16 +210,19 @@ class _ToastrNotificationWidgetState extends State<ToastrNotificationWidget> wit
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
+                      // ignore: deprecated_member_use
                       color: typeColor.withOpacity(0.15),
                       width: 1,
                     ),
                     boxShadow: [
                       BoxShadow(
+                        // ignore: deprecated_member_use
                         color: Colors.black.withOpacity(0.06),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
                       BoxShadow(
+                        // ignore: deprecated_member_use
                         color: typeColor.withOpacity(0.04),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
@@ -228,6 +246,7 @@ class _ToastrNotificationWidgetState extends State<ToastrNotificationWidget> wit
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
+                                // ignore: deprecated_member_use
                                 color: typeColor.withOpacity(0.1),
                                 shape: BoxShape.circle,
                               ),
@@ -290,5 +309,39 @@ class _ToastrNotificationWidgetState extends State<ToastrNotificationWidget> wit
         ),
       ),
     );
+  }
+}
+
+extension ToastrExtension on BuildContext {
+  void showSuccessToast({
+    required String title,
+    required String message,
+    Duration duration = const Duration(seconds: 3),
+  }) {
+    CustomToastr.showSuccess(this, title: title, message: message, duration: duration);
+  }
+
+  void showErrorToast({
+    required String title,
+    required String message,
+    Duration duration = const Duration(seconds: 3),
+  }) {
+    CustomToastr.showError(this, title: title, message: message, duration: duration);
+  }
+
+  void showWarningToast({
+    required String title,
+    required String message,
+    Duration duration = const Duration(seconds: 3),
+  }) {
+    CustomToastr.showWarning(this, title: title, message: message, duration: duration);
+  }
+
+  void showInfoToast({
+    required String title,
+    required String message,
+    Duration duration = const Duration(seconds: 3),
+  }) {
+    CustomToastr.showInfo(this, title: title, message: message, duration: duration);
   }
 }

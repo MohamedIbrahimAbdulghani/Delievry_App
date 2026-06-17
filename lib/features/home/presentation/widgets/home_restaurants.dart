@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/custom_toastr.dart';
 import '../../domain/entities/restaurant_entity.dart';
 import '../bloc/home_bloc.dart';
 import '../bloc/home_event.dart';
@@ -113,15 +114,11 @@ class HomeRestaurants extends StatelessWidget {
                           child: GestureDetector(
                             onTap: () {
                               context.read<HomeBloc>().add(ToggleFavoriteRestaurant(restaurant.id));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    restaurant.isFavorite 
-                                        ? 'Removed ${restaurant.name} from favorites!' 
-                                        : 'Added ${restaurant.name} to favorites!'
-                                  ),
-                                  duration: const Duration(seconds: 1),
-                                ),
+                              context.showSuccessToast(
+                                title: restaurant.isFavorite ? 'Removed Favorite' : 'Added Favorite',
+                                message: restaurant.isFavorite 
+                                    ? 'Removed ${restaurant.name} from favorites!' 
+                                    : 'Added ${restaurant.name} to favorites!',
                               );
                             },
                             child: Container(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/custom_toastr.dart';
 import '../../../../di/injection_container.dart';
 import '../../../cart/presentation/bloc/cart_bloc.dart';
 import '../../../cart/presentation/bloc/cart_event.dart';
@@ -252,10 +253,11 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                               'notes': _notesController.text,
                             },
                           ));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Added to cart')),
-                          );
-                          context.pop();
+                            context.showSuccessToast(
+                              title: 'Cart Updated',
+                              message: '${state.product.name} added to cart!',
+                            );
+                            context.pop();
                         },
                         child: Text(
                           'Add to Cart - \$${state.totalPrice.toStringAsFixed(2)}',

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/primary_button.dart';
+import '../../../../core/widgets/custom_toastr.dart';
 import '../../../../di/injection_container.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
@@ -49,13 +50,15 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             child: BlocConsumer<AuthBloc, AuthState>(
               listener: (context, state) {
                 if (state is PasswordResetSuccess) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Password reset successfully!')),
+                  context.showSuccessToast(
+                    title: 'Password Reset',
+                    message: 'Password reset successfully!',
                   );
                   context.go('/login');
                 } else if (state is AuthFailure) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(state.message)),
+                  context.showErrorToast(
+                    title: 'Reset Failed',
+                    message: state.message,
                   );
                 }
               },

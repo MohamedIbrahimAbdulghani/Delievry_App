@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/custom_toastr.dart';
 import '../bloc/favorites_bloc.dart';
 import '../bloc/favorites_event.dart';
 import '../bloc/favorites_state.dart';
@@ -156,11 +157,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
                               context.read<FavoritesBloc>().add(
                                 ToggleFavoriteEvent(restaurant.id.toString(), false),
                               );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Removed ${restaurant.name} from favorites!'),
-                                  duration: const Duration(seconds: 1),
-                                ),
+                              context.showSuccessToast(
+                                title: 'Removed Favorite',
+                                message: 'Removed ${restaurant.name} from favorites!',
                               );
                             },
                             child: Container(

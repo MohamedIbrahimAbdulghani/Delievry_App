@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/custom_toastr.dart';
 import '../../../../di/injection_container.dart';
 import '../bloc/splash_bloc.dart';
 import '../bloc/splash_event.dart';
@@ -26,8 +27,9 @@ class SplashPage extends StatelessWidget {
           } else if (state is SplashNavigateToAdminDashboard) {
             context.go('/admin/dashboard');
           } else if (state is SplashError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error: ${state.message}')),
+            context.showErrorToast(
+              title: 'Initialization Error',
+              message: state.message,
             );
             // Fallback to login
             context.go('/login');

@@ -54,8 +54,9 @@ class _RegisterPageState extends State<RegisterPage> {
                     context.go('/home');
                   }
                 } else if (state is AuthFailure) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(state.message)),
+                  context.showErrorToast(
+                    title: 'Registration Error',
+                    message: state.message,
                   );
                 }
               },

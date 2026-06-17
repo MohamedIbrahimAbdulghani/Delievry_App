@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/custom_toastr.dart';
 import '../../../../di/injection_container.dart';
 import '../../../../core/events/order_events.dart';
 import '../bloc/checkout_bloc.dart';
@@ -58,7 +59,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
               sl<OrderEventBus>().fire(const OrderPlacedEvent());
               _showSuccessDialog();
             } else if (state is CheckoutError) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
+              context.showErrorToast(
+                title: 'Checkout Error',
+                message: state.message,
+              );
             }
           },
           builder: (context, state) {

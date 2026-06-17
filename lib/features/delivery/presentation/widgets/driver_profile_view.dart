@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/custom_toastr.dart';
 import '../../../../di/injection_container.dart';
 import '../../../../core/auth/session_manager.dart';
 import '../../../auth/data/models/user_model.dart';
@@ -157,8 +158,9 @@ class DriverProfileView extends StatelessWidget {
                   (state.driver as UserModel).copyWith(name: nameController.text),
                 );
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Profile updated successfully (locally)')),
+                context.showSuccessToast(
+                  title: 'Profile Updated',
+                  message: 'Profile updated successfully (locally)',
                 );
               }
             },
@@ -192,8 +194,9 @@ class DriverProfileView extends StatelessWidget {
             onPressed: () {
               if (formKey.currentState!.validate()) {
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Password updated successfully!')),
+                context.showSuccessToast(
+                  title: 'Password Updated',
+                  message: 'Password updated successfully!',
                 );
               }
             },
