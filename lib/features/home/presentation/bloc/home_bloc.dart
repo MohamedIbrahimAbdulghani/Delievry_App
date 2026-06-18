@@ -103,12 +103,16 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     // Clear search query when filtering by category
     _currentQuery = null;
     
-    if (_allRestaurants.isEmpty && _allMeals.isEmpty) {
-      emit(HomeLoading());
-      await _fetchData(emit);
-    } else {
-      _emitFilteredState(emit);
-    }
+    // Reset pagination pages for the new category
+    _restaurantPage = 1;
+    _mealPage = 1;
+    _allRestaurants.clear();
+    _allMeals.clear();
+    _hasReachedMaxRestaurants = false;
+    _hasReachedMaxMeals = false;
+
+    emit(HomeLoading());
+    await _fetchData(emit);
   }
 
   Future<void> _onSearchRequested(SearchRequested event, Emitter<HomeState> emit) async {
@@ -123,18 +127,21 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   Future<void> _fetchData(Emitter<HomeState> emit) async {
+    final categoryId = _currentCategoryId == 'All' ? null : _currentCategoryId;
+    final query = _currentQuery;
+
     final results = await Future.wait([
       getBannersUseCase(),
       getCategoriesUseCase(),
       getRestaurantsUseCase(
         page: 1,
-        categoryId: null, // Fetch all to support client-side filtering
-        query: null,
+        categoryId: categoryId,
+        query: query,
       ),
       getPopularMealsUseCase(
         page: 1,
-        categoryId: null, // Fetch all to support client-side filtering
-        query: null,
+        categoryId: categoryId,
+        query: query,
       ),
     ]);
 
@@ -169,15 +176,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     final categoryId = _currentCategoryId ?? 'All';
     final query = _currentQuery ?? '';
 
-    // 1. Filter restaurants by category
+    // 1. Filter restaurants by category (API-based, no client-side filtering needed)
     List<RestaurantEntity> filteredRestaurants = _allRestaurants;
-    if (categoryId != 'All') {
-      filteredRestaurants = _allRestaurants.where((restaurant) {
-        return _allMeals.any((meal) =>
-            meal.restaurantId == restaurant.id &&
-            meal.category.toLowerCase() == categoryId.toLowerCase());
-      }).toList();
-    }
 
     // 2. Filter meals by category and search query
     List<MealEntity> filteredMeals = _allMeals;
@@ -281,10 +281,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       if (_hasReachedMaxRestaurants) return;
 
       _restaurantPage++;
+      final categoryId = _currentCategoryId == 'All' ? null : _currentCategoryId;
       final result = await getRestaurantsUseCase(
         page: _restaurantPage,
-        categoryId: null,
-        query: null,
+        categoryId: categoryId,
+        query: _currentQuery,
       );
 
       result.fold(
@@ -310,10 +311,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       if (_hasReachedMaxMeals) return;
 
       _mealPage++;
+      final categoryId = _currentCategoryId == 'All' ? null : _currentCategoryId;
       final result = await getPopularMealsUseCase(
         page: _mealPage,
-        categoryId: null,
-        query: null,
+        categoryId: categoryId,
+        query: _currentQuery,
       );
 
       result.fold(

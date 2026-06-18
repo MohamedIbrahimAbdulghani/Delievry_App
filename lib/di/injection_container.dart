@@ -102,6 +102,7 @@ Future<void> init() async {
         secureStorage: sl(),
         getUserProfileUseCase: sl(),
         sessionManager: sl(),
+        homeBloc: sl(),
       ));
   
   // Onboarding
@@ -126,7 +127,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => GetCategoriesUseCase(sl()));
   sl.registerLazySingleton(() => GetRestaurantsUseCase(sl()));
   sl.registerLazySingleton(() => GetPopularMealsUseCase(sl()));
-  sl.registerFactory(() => HomeBloc(
+  sl.registerLazySingleton(() => HomeBloc(
         getBannersUseCase: sl(),
         getCategoriesUseCase: sl(),
         getRestaurantsUseCase: sl(),

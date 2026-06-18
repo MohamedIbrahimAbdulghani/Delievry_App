@@ -29,12 +29,17 @@ class ListQuery
         }
 
         $filters = [];
-        $all = $request->query();
-        foreach ($all as $key => $value) {
-            if (str_starts_with($key, 'filter[') && str_ends_with($key, ']')) {
-                $inner = substr($key, 7, -1);
-                if ($inner !== '') {
-                    $filters[$inner] = $value;
+        $filterData = $request->query('filter');
+        if (is_array($filterData)) {
+            $filters = $filterData;
+        } else {
+            $all = $request->query();
+            foreach ($all as $key => $value) {
+                if (str_starts_with($key, 'filter[') && str_ends_with($key, ']')) {
+                    $inner = substr($key, 7, -1);
+                    if ($inner !== '') {
+                        $filters[$inner] = $value;
+                    }
                 }
             }
         }

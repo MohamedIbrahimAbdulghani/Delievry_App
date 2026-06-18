@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/branded_loader.dart';
 import '../../../../di/injection_container.dart';
 import '../bloc/home_bloc.dart';
 import '../bloc/home_event.dart';
@@ -33,7 +32,12 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _homeBloc = sl<HomeBloc>()..add(FetchHomeData());
+    _homeBloc = sl<HomeBloc>();
+    if (_homeBloc.state is! HomeLoaded) {
+      _homeBloc.add(FetchHomeData());
+    } else {
+      _preCachedState = _homeBloc.state as HomeLoaded;
+    }
     _scrollController.addListener(_onScroll);
   }
 
@@ -105,8 +109,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => _homeBloc,
+    return BlocProvider.value(
+      value: _homeBloc,
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
@@ -253,12 +257,6 @@ class _HomePageState extends State<HomePage> {
                     )
                   else
                     const SizedBox.shrink(),
-                  
-                  if (isLoading)
-                    const BrandedLoader(
-                      isOverlay: true,
-                      initialMessage: 'Preparing Your Experience...',
-                    ),
                 ],
               );
             },

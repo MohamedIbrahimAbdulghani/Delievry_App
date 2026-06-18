@@ -32,8 +32,8 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => _searchBloc,
+    return BlocProvider.value(
+      value: _searchBloc,
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(

@@ -3,6 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../di/injection_container.dart';
+import '../../../home/presentation/bloc/home_bloc.dart';
+import '../../../cart/presentation/bloc/cart_bloc.dart';
+import '../../../favorites/presentation/bloc/favorites_bloc.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
@@ -37,6 +40,10 @@ class _ProfilePageState extends State<ProfilePage> {
         body: BlocConsumer<ProfileBloc, ProfileState>(
           listener: (context, state) {
             if (state is LogoutSuccess) {
+              // بنمسح الـ Singletons بتاعة الـ Blocs عشان بيانات المستخدم القديم متبقاش متسربة للمستخدم الجديد
+              sl.resetLazySingleton<HomeBloc>();
+              sl.resetLazySingleton<CartBloc>();
+              sl.resetLazySingleton<FavoritesBloc>();
               context.go('/login');
             }
           },

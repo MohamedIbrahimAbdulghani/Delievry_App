@@ -256,4 +256,46 @@ class VisibilityControlTest extends TestCase
         // Subtotal should only include the available burger: 10.00 * 2 = 20.00
         $this->assertEquals('20.00', $data['subtotal']);
     }
+
+    public function test_customer_can_filter_restaurants_by_category(): void
+    {
+        // Create another active restaurant that has a Pizza product
+        $pizzaRestaurant = Restaurant::query()->create([
+            'name' => 'Pizza Palace',
+            'slug' => 'pizza-palace',
+            'city' => 'New York',
+            'address' => '789 pizza rd',
+            'phone' => '111222333',
+            'delivery_fee' => 1.99,
+            'is_active' => true,
+        ]);
+
+        \App\Modules\Products\Models\Product::query()->create([
+            'restaurant_id' => $pizzaRestaurant->id,
+            'name' => 'Pizza Slice',
+            'slug' => 'pizza-slice',
+            'description' => 'Cheesy pizza',
+            'price' => 5.00,
+            'category' => 'Pizza',
+            'is_available' => true,
+        ]);
+
+        // 1. Filter by category "Burgers"
+        $response = $this->getJson('/api/v1/restaurants?filter[category]=Burgers');
+        $response->assertStatus(200);
+        $items = $response->json('data.items');
+        $names = collect($items)->pluck('name');
+        
+        $this->assertTrue($names->contains('Active Diner')); // has Burger product
+        $this->assertFalse($names->contains('Pizza Palace'));
+
+        // 2. Filter by category "Pizza"
+        $response = $this->getJson('/api/v1/restaurants?filter[category]=Pizza');
+        $response->assertStatus(200);
+        $items = $response->json('data.items');
+        $names = collect($items)->pluck('name');
+
+        $this->assertTrue($names->contains('Pizza Palace')); // has Pizza product
+        $this->assertFalse($names->contains('Active Diner'));
+    }
 }

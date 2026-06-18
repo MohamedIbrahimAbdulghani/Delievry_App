@@ -9,4 +9,9 @@ class AppColors {
   static const Color onPrimary = Colors.white;
   static const Color textSecondary = Color(0xFF5A5C5C);
   static const Color outline = Color(0xFFE7E8E8);
+
+  // ألوان خلفية الـ Splash Screen الـ Premium
+  static const Color splashBgStart = Color(0xFF0F172A);
+  static const Color splashBgCenter = Color(0xFF111827);
+  static const Color splashBgEnd = Color(0xFF1E293B);
 }

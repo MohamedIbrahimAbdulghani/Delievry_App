@@ -90,7 +90,7 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
   }) async {
     try {
       final queryParams = <String, dynamic>{'page': page};
-      if (categoryId != null && categoryId != 'All' && categoryId != '1') {
+      if (categoryId != null && categoryId != 'All') {
         queryParams['filter[category]'] = categoryId;
       }
       if (query != null && query.isNotEmpty) queryParams['filter[name]'] = query;
@@ -109,23 +109,6 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
         }
         final List list = data['items'];
         final restaurants = list.map((json) => RestaurantModel.fromJson(json)).toList();
-
-        // Client-side category restaurant filtering if categoryId is specific and not 'All'
-        if (categoryId != null && categoryId != 'All') {
-          final prefs = await SharedPreferences.getInstance();
-          final categoryData = prefs.getString('admin_categories');
-          if (categoryData != null) {
-            final List catsList = jsonDecode(categoryData);
-            final categories = catsList.map((json) => CategoryModel.fromJson(Map<String, dynamic>.from(json))).toList();
-            final matchedCat = categories.cast<CategoryModel?>().firstWhere(
-              (c) => c?.id == categoryId,
-              orElse: () => null,
-            );
-            if (matchedCat != null && matchedCat.restaurantIds.isNotEmpty) {
-              return restaurants.where((r) => matchedCat.restaurantIds.contains(r.id)).toList();
-            }
-          }
-        }
         return restaurants;
       } else {
         throw ServerException(response.data['message'] ?? 'Failed to fetch restaurants');
@@ -144,7 +127,7 @@ class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
   }) async {
     try {
       final queryParams = <String, dynamic>{'page': page};
-      if (categoryId != null && categoryId != 'All' && categoryId != '1') {
+      if (categoryId != null && categoryId != 'All') {
         queryParams['filter[category]'] = categoryId;
       }
       if (query != null && query.isNotEmpty) queryParams['filter[search]'] = query;
