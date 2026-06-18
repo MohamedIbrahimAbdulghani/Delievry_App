@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../di/injection_container.dart';
 import '../bloc/orders_bloc.dart';
 import '../bloc/orders_event.dart';
@@ -44,7 +45,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
         body: BlocBuilder<OrdersBloc, OrdersState>(
           builder: (context, state) {
             if (state is OrdersLoading) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+              return const OrderDetailsSkeleton();
             } else if (state is OrderDetailsLoaded) {
               final order = state.order;
               return SingleChildScrollView(

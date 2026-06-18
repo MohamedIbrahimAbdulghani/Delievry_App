@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../di/injection_container.dart';
 import '../bloc/notifications_bloc.dart';
 import '../bloc/notifications_event.dart';
@@ -65,7 +66,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         body: BlocBuilder<NotificationsBloc, NotificationsState>(
           builder: (context, state) {
             if (state is NotificationsLoading) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+              return const ListSkeleton(itemCount: 5, isLeadingCircle: true, height: 100);
             } else if (state is NotificationsLoaded) {
               if (state.notifications.isEmpty) {
                 return _buildEmptyState();

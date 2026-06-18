@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../di/injection_container.dart';
 import '../../../home/presentation/bloc/home_bloc.dart';
 import '../../../cart/presentation/bloc/cart_bloc.dart';
@@ -49,7 +50,7 @@ class _ProfilePageState extends State<ProfilePage> {
           },
           builder: (context, state) {
             if (state is ProfileLoading) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+              return const ProfileSkeleton();
             } else if (state is ProfileLoaded) {
               return SingleChildScrollView(
                 child: Column(

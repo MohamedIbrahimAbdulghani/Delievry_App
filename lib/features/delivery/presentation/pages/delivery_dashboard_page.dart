@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/custom_toastr.dart';
+import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../di/injection_container.dart';
 import '../bloc/delivery_bloc.dart';
 import '../bloc/delivery_event.dart';
@@ -70,7 +71,7 @@ class _DeliveryDashboardPageState extends State<DeliveryDashboardPage> {
                 current is DeliveryLoading || current is DeliveryLoaded || current is DeliveryError,
             builder: (context, state) {
               if (state is DeliveryLoading) {
-                return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                return const ListSkeleton(itemCount: 4, height: 100);
               } else if (state is DeliveryLoaded) {
                 return SafeArea(child: _buildBody(state));
               } else if (state is DeliveryError) {
@@ -91,7 +92,7 @@ class _DeliveryDashboardPageState extends State<DeliveryDashboardPage> {
                   ),
                 );
               }
-              return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+              return const ListSkeleton(itemCount: 4, height: 100);
             },
           ),
           bottomNavigationBar: BottomNavigationBar(

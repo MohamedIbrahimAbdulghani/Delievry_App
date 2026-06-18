@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../di/injection_container.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
@@ -47,7 +48,7 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
         body: BlocBuilder<ProfileBloc, ProfileState>(
           builder: (context, state) {
             if (state is ProfileLoading) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+              return const ListSkeleton(itemCount: 4, hasTrailing: true);
             } else if (state is AddressesLoaded) {
               return ListView.builder(
                 padding: const EdgeInsets.all(16),

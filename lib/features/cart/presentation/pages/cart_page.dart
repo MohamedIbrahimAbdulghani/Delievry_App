@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../bloc/cart_bloc.dart';
 import '../bloc/cart_event.dart';
 import '../bloc/cart_state.dart';
@@ -40,7 +41,7 @@ class _CartPageState extends State<CartPage> {
       body: BlocBuilder<CartBloc, CartState>(
         builder: (context, state) {
           if (state is CartLoading) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+            return const ListSkeleton(itemCount: 3, height: 100);
           } else if (state is CartLoaded) {
             if (state.cart.items.isEmpty) {
               return _buildEmptyCart();

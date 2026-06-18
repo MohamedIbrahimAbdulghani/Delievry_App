@@ -6,6 +6,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/custom_toastr.dart';
+import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../di/injection_container.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../bloc/delivery_bloc.dart';
@@ -91,7 +92,7 @@ class _DeliveryTrackingPageState extends State<DeliveryTrackingPage> {
               current is DeliveryLoading || current is DeliveryLoaded || current is DeliveryError,
           builder: (context, state) {
             if (state is DeliveryLoading) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+              return const MapTrackingSkeleton();
             } else if (state is DeliveryLoaded) {
               final orderIndex = state.assignedOrders.indexWhere((o) => o.id == widget.orderId);
               if (orderIndex == -1) {

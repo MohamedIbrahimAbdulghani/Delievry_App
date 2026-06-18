@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/custom_toastr.dart';
+import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../di/injection_container.dart';
 import '../../domain/entities/order_entity.dart';
 import '../bloc/orders_bloc.dart';
@@ -61,7 +62,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
             }
 
             if (state is OrdersLoading && _lastOrder == null) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+              return const MapTrackingSkeleton();
             } else if (_lastOrder != null) {
               final order = _lastOrder!;
               debugPrint('Order details loaded: ID: ${order.id}, Lat: ${order.latitude}, Lng: ${order.longitude}, DriverLat: ${order.driverLatitude}');

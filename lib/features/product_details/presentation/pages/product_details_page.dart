@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/custom_toastr.dart';
+import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../di/injection_container.dart';
 import '../../../cart/presentation/bloc/cart_bloc.dart';
 import '../../../cart/presentation/bloc/cart_event.dart';
@@ -46,7 +47,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         body: BlocBuilder<ProductDetailBloc, ProductDetailState>(
           builder: (context, state) {
             if (state is ProductDetailLoading) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+              return const ProductDetailsSkeleton();
             } else if (state is ProductDetailLoaded) {
               final product = state.product;
               return Stack(

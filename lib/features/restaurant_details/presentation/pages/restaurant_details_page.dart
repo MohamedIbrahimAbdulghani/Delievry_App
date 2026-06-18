@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../di/injection_container.dart';
 import '../bloc/restaurant_detail_bloc.dart';
 import '../bloc/restaurant_detail_event.dart';
@@ -45,7 +46,7 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> with Sing
         body: BlocBuilder<RestaurantDetailBloc, RestaurantDetailState>(
           builder: (context, state) {
             if (state is RestaurantDetailLoading) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+              return const RestaurantDetailsSkeleton();
             } else if (state is RestaurantDetailLoaded) {
               final restaurant = state.restaurant;
               return NestedScrollView(

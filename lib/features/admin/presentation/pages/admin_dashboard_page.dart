@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/custom_toastr.dart';
+import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../di/injection_container.dart';
 import '../../../../core/auth/session_manager.dart';
 import '../../../../core/network/dio_client.dart';
@@ -386,7 +387,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       current is AdminLoading || current is AdminLoaded || current is AdminError,
                   builder: (context, state) {
                     if (state is AdminLoading) {
-                      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                      return const AdminDashboardSkeleton();
                     } else if (state is AdminLoaded) {
                       return _buildActiveView(state);
                     } else if (state is AdminError) {

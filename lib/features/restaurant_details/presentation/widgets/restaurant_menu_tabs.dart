@@ -5,28 +5,45 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../cart/presentation/bloc/cart_bloc.dart';
 import '../../../cart/presentation/bloc/cart_event.dart';
 import '../../../cart/presentation/bloc/cart_state.dart';
+import '../../../cart/domain/entities/cart_entity.dart';
 import '../../../cart/domain/entities/cart_item_entity.dart';
 import '../../domain/entities/restaurant_detail_entity.dart';
 
-class RestaurantMenuTabs extends StatelessWidget {
+class RestaurantMenuTabs extends StatefulWidget {
   final RestaurantDetailEntity restaurant;
 
   const RestaurantMenuTabs({super.key, required this.restaurant});
 
   @override
+  State<RestaurantMenuTabs> createState() => _RestaurantMenuTabsState();
+}
+
+class _RestaurantMenuTabsState extends State<RestaurantMenuTabs> {
+  CartEntity? _cachedCart;
+
+  @override
+  void initState() {
+    super.initState();
+    final cartState = context.read<CartBloc>().state;
+    if (cartState is CartLoaded) {
+      _cachedCart = cartState.cart;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (restaurant.products.isEmpty) {
+    if (widget.restaurant.products.isEmpty) {
       return const Center(child: Text('No items available in the menu.'));
     }
 
-    final categories = restaurant.categories;
+    final categories = widget.restaurant.categories;
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: categories.length,
       itemBuilder: (context, catIndex) {
         final category = categories[catIndex];
-        final products = restaurant.products.where((p) => p.category == category).toList();
+        final products = widget.restaurant.products.where((p) => p.category == category).toList();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,9 +112,15 @@ class RestaurantMenuTabs extends StatelessWidget {
                       ),
                       BlocBuilder<CartBloc, CartState>(
                         builder: (context, state) {
-                          CartItemEntity? cartItem;
                           if (state is CartLoaded) {
-                            for (var item in state.cart.items) {
+                            _cachedCart = state.cart;
+                          }
+
+                          final isUpdating = state is CartLoading;
+
+                          CartItemEntity? cartItem;
+                          if (_cachedCart != null) {
+                            for (var item in _cachedCart!.items) {
                               if (item.product.id == product.id) {
                                 cartItem = item;
                                 break;
@@ -108,19 +131,38 @@ class RestaurantMenuTabs extends StatelessWidget {
                           if (cartItem == null || cartItem.quantity == 0) {
                             return GestureDetector(
                               onTap: () {}, // Swallow taps to prevent navigation
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  minimumSize: const Size(60, 32),
-                                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              child: InkWell(
+                                onTap: isUpdating
+                                    ? null
+                                    : () {
+                                        context.read<CartBloc>().add(
+                                          AddItemToCart(productId: product.id, quantity: 1),
+                                        );
+                                      },
+                                borderRadius: BorderRadius.circular(18),
+                                child: Opacity(
+                                  opacity: isUpdating ? 0.6 : 1.0,
+                                  child: Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.primary.withAlpha(50),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      Icons.add,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ),
                                 ),
-                                onPressed: () {
-                                  context.read<CartBloc>().add(AddItemToCart(productId: product.id, quantity: 1));
-                                },
-                                child: const Text('Add', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                               ),
                             );
                           }
@@ -128,44 +170,54 @@ class RestaurantMenuTabs extends StatelessWidget {
                           final item = cartItem;
                           return GestureDetector(
                             onTap: () {}, // Swallow taps to prevent navigation
-                            child: Container(
-                              decoration: BoxDecoration(
-                                border: Border.all(color: AppColors.primary.withAlpha(80)),
-                                borderRadius: BorderRadius.circular(8),
-                                color: AppColors.background,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                    padding: EdgeInsets.zero,
-                                    icon: const Icon(Icons.remove, size: 16, color: AppColors.primary),
-                                    onPressed: () {
-                                      context.read<CartBloc>().add(
-                                        UpdateItemQuantity(lineId: item.id, quantity: item.quantity - 1),
-                                      );
-                                    },
-                                  ),
-                                  Text(
-                                    '${item.quantity}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.onBackground,
+                            child: Opacity(
+                              opacity: isUpdating ? 0.6 : 1.0,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withAlpha(20),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: AppColors.primary.withAlpha(40)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                      padding: EdgeInsets.zero,
+                                      icon: const Icon(Icons.remove, size: 16, color: AppColors.primary),
+                                      onPressed: isUpdating
+                                          ? null
+                                          : () {
+                                              context.read<CartBloc>().add(
+                                                UpdateItemQuantity(lineId: item.id, quantity: item.quantity - 1),
+                                              );
+                                            },
                                     ),
-                                  ),
-                                  IconButton(
-                                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                    padding: EdgeInsets.zero,
-                                    icon: const Icon(Icons.add, size: 16, color: AppColors.primary),
-                                    onPressed: () {
-                                      context.read<CartBloc>().add(
-                                        UpdateItemQuantity(lineId: item.id, quantity: item.quantity + 1),
-                                      );
-                                    },
-                                  ),
-                                ],
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                                      child: Text(
+                                        '${item.quantity}',
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                      padding: EdgeInsets.zero,
+                                      icon: const Icon(Icons.add, size: 16, color: AppColors.primary),
+                                      onPressed: isUpdating
+                                          ? null
+                                          : () {
+                                              context.read<CartBloc>().add(
+                                                UpdateItemQuantity(lineId: item.id, quantity: item.quantity + 1),
+                                              );
+                                            },
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           );

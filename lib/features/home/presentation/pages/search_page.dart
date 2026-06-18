@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../di/injection_container.dart';
 import '../bloc/home_bloc.dart';
 import '../bloc/home_event.dart';
@@ -74,7 +75,7 @@ class _SearchPageState extends State<SearchPage> {
               child: BlocBuilder<HomeBloc, HomeState>(
                 builder: (context, state) {
                   if (state is HomeLoading) {
-                    return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                    return const ListSkeleton(itemCount: 4, height: 90);
                   } else if (state is HomeLoaded) {
                     final meals = state.popularMeals;
 

@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/custom_toastr.dart';
+import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../di/injection_container.dart';
 import '../../../../core/events/order_events.dart';
 import '../../../cart/presentation/bloc/cart_bloc.dart';
@@ -83,7 +84,7 @@ class _OrdersHistoryPageState extends State<OrdersHistoryPage> with SingleTicker
           },
           builder: (context, state) {
             if (state is OrdersLoading || state is OrdersInitial) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+              return const ListSkeleton(itemCount: 3, hasTrailing: true, height: 120);
             } else if (state is OrdersLoaded) {
               return TabBarView(
                 controller: _tabController,

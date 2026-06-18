@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/custom_toastr.dart';
+import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../bloc/favorites_bloc.dart';
 import '../bloc/favorites_event.dart';
 import '../bloc/favorites_state.dart';
@@ -45,7 +46,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
       body: BlocBuilder<FavoritesBloc, FavoritesState>(
         builder: (context, state) {
           if (state is FavoritesLoading) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+            return const ListSkeleton(itemCount: 4, hasTrailing: true, height: 90);
           } else if (state is FavoritesLoaded) {
             if (state.favorites.isEmpty) {
               return _buildEmptyState(context);
