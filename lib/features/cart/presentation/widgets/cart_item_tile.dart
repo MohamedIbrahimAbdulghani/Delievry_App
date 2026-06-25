@@ -51,36 +51,66 @@ class CartItemTile extends StatelessWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  item.product.name,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.product.name,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (item.options != null && item.options!.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                item.options!.values.join(', '),
+                                style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 22),
+                      onPressed: onRemoved,
+                      constraints: const BoxConstraints(),
+                      padding: EdgeInsets.zero,
+                    ),
+                  ],
                 ),
-                if (item.options != null && item.options!.isNotEmpty)
-                  Text(
-                    item.options!.values.join(', '),
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                  ),
-                const SizedBox(height: 8),
-                Text(
-                  '\$${item.product.price.toStringAsFixed(2)}',
-                  style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '\$${item.product.price.toStringAsFixed(2)}',
+                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    Row(
+                      children: [
+                        _buildQtyButton(Icons.remove, () => onQuantityChanged(item.quantity - 1)),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text(
+                            item.quantity.toString(),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                        ),
+                        _buildQtyButton(Icons.add, () => onQuantityChanged(item.quantity + 1)),
+                      ],
+                    ),
+                  ],
                 ),
               ],
             ),
-          ),
-          Row(
-            children: [
-              _buildQtyButton(Icons.remove, () => onQuantityChanged(item.quantity - 1)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  item.quantity.toString(),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-              ),
-              _buildQtyButton(Icons.add, () => onQuantityChanged(item.quantity + 1)),
-            ],
           ),
         ],
       ),
@@ -88,15 +118,15 @@ class CartItemTile extends StatelessWidget {
   }
 
   Widget _buildQtyButton(IconData icon, VoidCallback onTap) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.outline),
-          borderRadius: BorderRadius.circular(6),
+        decoration: const BoxDecoration(
+          color: AppColors.primary,
+          shape: BoxShape.circle,
         ),
-        child: Icon(icon, size: 16, color: AppColors.onBackground),
+        child: Icon(icon, size: 16, color: Colors.white),
       ),
     );
   }

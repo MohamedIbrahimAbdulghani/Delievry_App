@@ -172,52 +172,57 @@ class _RestaurantMenuTabsState extends State<RestaurantMenuTabs> {
                             onTap: () {}, // Swallow taps to prevent navigation
                             child: Opacity(
                               opacity: isUpdating ? 0.6 : 1.0,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withAlpha(20),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: AppColors.primary.withAlpha(40)),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                      padding: EdgeInsets.zero,
-                                      icon: const Icon(Icons.remove, size: 16, color: AppColors.primary),
-                                      onPressed: isUpdating
-                                          ? null
-                                          : () {
-                                              context.read<CartBloc>().add(
-                                                UpdateItemQuantity(lineId: item.id, quantity: item.quantity - 1),
-                                              );
-                                            },
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  GestureDetector(
+                                    onTap: isUpdating
+                                        ? null
+                                        : () {
+                                            context.read<CartBloc>().add(
+                                              UpdateItemQuantity(lineId: item.id, quantity: item.quantity - 1),
+                                            );
+                                          },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.transparent,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.grey.shade300),
+                                      ),
+                                      child: const Icon(Icons.remove, color: Colors.black54, size: 18),
                                     ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                                      child: Text(
-                                        '${item.quantity}',
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.primary,
-                                        ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    child: Text(
+                                      '${item.quantity}',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.onBackground,
                                       ),
                                     ),
-                                    IconButton(
-                                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                      padding: EdgeInsets.zero,
-                                      icon: const Icon(Icons.add, size: 16, color: AppColors.primary),
-                                      onPressed: isUpdating
-                                          ? null
-                                          : () {
-                                              context.read<CartBloc>().add(
-                                                UpdateItemQuantity(lineId: item.id, quantity: item.quantity + 1),
-                                              );
-                                            },
+                                  ),
+                                  GestureDetector(
+                                    onTap: isUpdating
+                                        ? null
+                                        : () {
+                                            context.read<CartBloc>().add(
+                                              UpdateItemQuantity(lineId: item.id, quantity: item.quantity + 1),
+                                            );
+                                          },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.transparent,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.grey.shade300),
+                                      ),
+                                      child: const Icon(Icons.add, color: Colors.black54, size: 18),
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           );

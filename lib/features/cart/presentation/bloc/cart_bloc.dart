@@ -47,7 +47,20 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       add(RemoveItemFromCart(event.lineId));
       return;
     }
-    emit(CartLoading());
+    
+    if (state is CartLoaded) {
+      final currentCart = (state as CartLoaded).cart;
+      final updatedItems = currentCart.items.map((item) {
+        if (item.id == event.lineId) {
+          return item.copyWith(quantity: event.quantity);
+        }
+        return item;
+      }).toList();
+      emit(CartLoaded(currentCart.copyWith(items: updatedItems)));
+    } else {
+      emit(CartLoading());
+    }
+    
     final result = await updateCartItemUseCase(event.lineId, event.quantity);
     result.fold(
       (failure) => emit(CartError(failure.message)),
@@ -56,7 +69,14 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   }
 
   Future<void> _onRemoveItemFromCart(RemoveItemFromCart event, Emitter<CartState> emit) async {
-    emit(CartLoading());
+    if (state is CartLoaded) {
+      final currentCart = (state as CartLoaded).cart;
+      final updatedItems = currentCart.items.where((item) => item.id != event.lineId).toList();
+      emit(CartLoaded(currentCart.copyWith(items: updatedItems)));
+    } else {
+      emit(CartLoading());
+    }
+    
     final result = await removeFromCartUseCase(event.lineId);
     result.fold(
       (failure) => emit(CartError(failure.message)),

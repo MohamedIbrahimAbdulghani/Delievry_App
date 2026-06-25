@@ -14,6 +14,20 @@ class CartItemEntity extends Equatable {
     this.options,
   });
 
+  CartItemEntity copyWith({
+    int? id,
+    MealEntity? product,
+    int? quantity,
+    Map<String, dynamic>? options,
+  }) {
+    return CartItemEntity(
+      id: id ?? this.id,
+      product: product ?? this.product,
+      quantity: quantity ?? this.quantity,
+      options: options ?? this.options,
+    );
+  }
+
   double get totalPrice => (product.price * quantity);
 
   @override

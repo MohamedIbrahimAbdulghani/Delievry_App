@@ -212,26 +212,41 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                   ],
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
                       child: Row(
                         children: [
-                          IconButton(
-                            icon: const Icon(Icons.remove, color: AppColors.primary),
-                            onPressed: () => _bloc.add(UpdateQuantity(state.quantity - 1)),
+                          GestureDetector(
+                            onTap: () => _bloc.add(UpdateQuantity(state.quantity - 1)),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.transparent,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: const Icon(Icons.remove, color: Colors.black54, size: 20),
+                            ),
                           ),
-                          Text(
-                            state.quantity.toString(),
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Text(
+                              state.quantity.toString(),
+                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                            ),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.add, color: AppColors.primary),
-                            onPressed: () => _bloc.add(UpdateQuantity(state.quantity + 1)),
+                          GestureDetector(
+                            onTap: () => _bloc.add(UpdateQuantity(state.quantity + 1)),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.transparent,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: const Icon(Icons.add, color: Colors.black54, size: 20),
+                            ),
                           ),
                         ],
                       ),

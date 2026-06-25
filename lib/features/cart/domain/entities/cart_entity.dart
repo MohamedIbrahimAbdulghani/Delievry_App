@@ -8,6 +8,14 @@ class CartEntity extends Equatable {
     required this.items,
   });
 
+  CartEntity copyWith({
+    List<CartItemEntity>? items,
+  }) {
+    return CartEntity(
+      items: items ?? this.items,
+    );
+  }
+
   double get subtotal => items.fold(0, (sum, item) => sum + item.totalPrice);
   double get deliveryFee => 5.0; // Placeholder or fetched from restaurant
   double get tax => subtotal * 0.1; // 10% placeholder
