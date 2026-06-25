@@ -26,6 +26,8 @@ import '../features/checkout/data/datasources/checkout_remote_data_source.dart';
 import '../features/checkout/data/repositories/checkout_repository_impl.dart';
 import '../features/checkout/domain/repositories/checkout_repository.dart';
 import '../features/checkout/domain/usecases/place_order_usecase.dart';
+import '../features/checkout/domain/usecases/create_payment_intent_usecase.dart';
+import '../features/checkout/domain/usecases/confirm_payment_usecase.dart';
 import '../features/checkout/presentation/bloc/checkout_bloc.dart';
 import '../features/favorites/data/repositories/favorites_repository_impl.dart';
 import '../features/favorites/domain/repositories/favorites_repository.dart';
@@ -174,7 +176,13 @@ Future<void> init() async {
   sl.registerLazySingleton<CheckoutRemoteDataSource>(() => CheckoutRemoteDataSourceImpl(dioClient: sl()));
   sl.registerLazySingleton<CheckoutRepository>(() => CheckoutRepositoryImpl(remoteDataSource: sl()));
   sl.registerLazySingleton(() => PlaceOrderUseCase(sl()));
-  sl.registerFactory(() => CheckoutBloc(placeOrderUseCase: sl()));
+  sl.registerLazySingleton(() => CreatePaymentIntentUseCase(sl()));
+  sl.registerLazySingleton(() => ConfirmPaymentUseCase(sl()));
+  sl.registerFactory(() => CheckoutBloc(
+        placeOrderUseCase: sl(),
+        createPaymentIntentUseCase: sl(),
+        confirmPaymentUseCase: sl(),
+      ));
 
   // Orders
   sl.registerLazySingleton<OrderRemoteDataSource>(() => OrderRemoteDataSourceImpl(dioClient: sl()));

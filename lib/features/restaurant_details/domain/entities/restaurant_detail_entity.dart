@@ -17,6 +17,7 @@ class RestaurantDetailEntity extends RestaurantEntity {
     required super.deliveryFee,
     required super.isActive,
     super.imageUrl,
+    super.isFavorite = false,
     required this.products,
     required this.reviews,
     required this.categories,

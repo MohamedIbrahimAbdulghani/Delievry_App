@@ -43,92 +43,96 @@ class _OnboardingPageState extends State<OnboardingPage> {
             context.go('/login');
           }
         },
-        child: Scaffold(
-          body: SafeArea(
-            child: Column(
-              children: [
-                Align(
-                  alignment: Alignment.topRight,
-                  child: TextButton(
-                    onPressed: () {
-                      context.read<OnboardingBloc>().add(CompleteOnboarding());
-                    },
-                    child: const Text('Skip', style: TextStyle(color: AppColors.textSecondary)),
-                  ),
-                ),
-                Expanded(
-                  child: PageView.builder(
-                    controller: _pageController,
-                    onPageChanged: (index) {
-                      setState(() {
-                        _currentPage = index;
-                      });
-                    },
-                    itemCount: _onboardingData.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 40.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.fastfood, size: 200, color: AppColors.primary),
-                            const SizedBox(height: 48),
-                            Text(
-                              _onboardingData[index]['title']!,
-                              style: const TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Plus Jakarta Sans',
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              _onboardingData[index]['description']!,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: AppColors.textSecondary,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    _onboardingData.length,
-                    (index) => buildDot(index, context),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                  child: BlocBuilder<OnboardingBloc, OnboardingState>(
-                    builder: (context, state) {
-                      return PrimaryButton(
-                        text: _currentPage == _onboardingData.length - 1 ? 'Get Started' : 'Continue',
+        child: Builder(
+          builder: (context) {
+            return Scaffold(
+              body: SafeArea(
+                child: Column(
+                  children: [
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: TextButton(
                         onPressed: () {
-                          if (_currentPage == _onboardingData.length - 1) {
-                            context.read<OnboardingBloc>().add(CompleteOnboarding());
-                          } else {
-                            _pageController.nextPage(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeIn,
-                            );
-                          }
+                          context.read<OnboardingBloc>().add(CompleteOnboarding());
                         },
-                      );
-                    },
-                  ),
+                        child: const Text('Skip', style: TextStyle(color: AppColors.textSecondary)),
+                      ),
+                    ),
+                    Expanded(
+                      child: PageView.builder(
+                        controller: _pageController,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _currentPage = index;
+                          });
+                        },
+                        itemCount: _onboardingData.length,
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 40.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.fastfood, size: 200, color: AppColors.primary),
+                                const SizedBox(height: 48),
+                                Text(
+                                  _onboardingData[index]['title']!,
+                                  style: const TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Plus Jakarta Sans',
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  _onboardingData[index]['description']!,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        _onboardingData.length,
+                        (index) => buildDot(index, context),
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: BlocBuilder<OnboardingBloc, OnboardingState>(
+                        builder: (context, state) {
+                          return PrimaryButton(
+                            text: _currentPage == _onboardingData.length - 1 ? 'Get Started' : 'Continue',
+                            onPressed: () {
+                              if (_currentPage == _onboardingData.length - 1) {
+                                context.read<OnboardingBloc>().add(CompleteOnboarding());
+                              } else {
+                                _pageController.nextPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeIn,
+                                );
+                              }
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                  ],
                 ),
-                const SizedBox(height: 32),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
       ),
     );

@@ -15,8 +15,22 @@ class WebhookController
 
     public function handle(Request $request): JsonResponse
     {
-        $payload = $request->all();
-        $data = $this->paymentService->handleWebhook(is_array($payload) ? $payload : []);
+        $payload = $request->getContent();
+        $sigHeader = $request->header('Stripe-Signature');
+
+        try {
+            $event = \Stripe\Webhook::constructEvent(
+                $payload,
+                $sigHeader,
+                config('services.stripe.webhook_secret')
+            );
+        } catch (\UnexpectedValueException $e) {
+            return response()->json(['error' => 'Invalid payload'], 400);
+        } catch (\Stripe\Exception\SignatureVerificationException $e) {
+            return response()->json(['error' => 'Invalid signature'], 400);
+        }
+
+        $data = $this->paymentService->handleWebhookEvent($event);
 
         return ApiResponse::success($data, __('Webhook received.'));
     }

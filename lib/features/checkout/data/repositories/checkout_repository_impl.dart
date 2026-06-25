@@ -28,4 +28,32 @@ class CheckoutRepositoryImpl implements CheckoutRepository {
       return Left(ServerFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, String>> createPaymentIntent({
+    required String address,
+    String? notes,
+  }) async {
+    try {
+      final result = await remoteDataSource.createPaymentIntent(
+        address: address,
+        notes: notes,
+      );
+      return Right(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> confirmPayment(String paymentIntentId) async {
+    try {
+      await remoteDataSource.confirmPayment(paymentIntentId);
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
 }

@@ -7,4 +7,11 @@ abstract class CheckoutRepository {
     required String paymentMethod,
     String? notes,
   });
+
+  Future<Either<Failure, String>> createPaymentIntent({
+    required String address,
+    String? notes,
+  });
+
+  Future<Either<Failure, void>> confirmPayment(String paymentIntentId);
 }

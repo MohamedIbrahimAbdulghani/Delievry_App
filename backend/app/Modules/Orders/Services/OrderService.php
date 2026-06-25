@@ -36,9 +36,9 @@ class OrderService
         );
     }
 
-    public function checkout(User $user, string $deliveryAddress, ?string $notes, string $paymentMethod): mixed
+    public function checkout(User $user, string $deliveryAddress, ?string $notes, string $paymentMethod, ?string $provider = null, ?string $providerRef = null): mixed
     {
-        return DB::transaction(function () use ($user, $deliveryAddress, $notes, $paymentMethod) {
+        return DB::transaction(function () use ($user, $deliveryAddress, $notes, $paymentMethod, $provider, $providerRef) {
             $cart = $this->carts->getOrCreateForUser($user);
             $this->carts->loadWithItems($cart);
 
@@ -112,12 +112,12 @@ class OrderService
                 Payment::query()->create([
                     'order_id' => $order->id,
                     'method' => $paymentMethod,
-                    'status' => Payment::STATUS_PENDING,
+                    'status' => $providerRef ? Payment::STATUS_COMPLETED : Payment::STATUS_PENDING,
                     'amount' => $total,
-                    'provider' => null,
-                    'provider_ref' => null,
+                    'provider' => $provider,
+                    'provider_ref' => $providerRef,
                     'meta' => $paymentMethod === Payment::METHOD_CARD
-                        ? ['awaiting_gateway' => true]
+                        ? ($providerRef ? ['stripe_intent' => $providerRef] : ['awaiting_gateway' => true])
                         : ['cod' => true],
                 ]);
 

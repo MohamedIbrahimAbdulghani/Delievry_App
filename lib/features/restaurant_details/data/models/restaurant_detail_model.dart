@@ -13,6 +13,7 @@ class RestaurantDetailModel extends RestaurantDetailEntity {
     required super.deliveryFee,
     required super.isActive,
     super.imageUrl,
+    super.isFavorite,
     required super.products,
     required super.reviews,
     required super.categories,
@@ -31,6 +32,7 @@ class RestaurantDetailModel extends RestaurantDetailEntity {
       deliveryFee: double.parse(json['delivery_fee'].toString()),
       isActive: json['is_active'],
       imageUrl: json['image_url'],
+      isFavorite: json['is_favorite'] ?? false,
       products: (json['products'] as List?)
               ?.map((p) => MealModel.fromJson(p))
               .toList() ??

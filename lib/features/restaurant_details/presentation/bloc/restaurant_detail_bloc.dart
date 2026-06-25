@@ -53,7 +53,10 @@ class RestaurantDetailBloc extends Bloc<RestaurantDetailEvent, RestaurantDetailS
     final result = await getRestaurantDetailsUseCase(event.id);
     result.fold(
       (failure) => emit(RestaurantDetailError(failure.message)),
-      (restaurant) => emit(RestaurantDetailLoaded(restaurant: restaurant)),
+      (restaurant) => emit(RestaurantDetailLoaded(
+        restaurant: restaurant,
+        isFavorite: restaurant.isFavorite,
+      )),
     );
   }
 
@@ -71,6 +74,7 @@ class RestaurantDetailBloc extends Bloc<RestaurantDetailEvent, RestaurantDetailS
         (failure) => debugPrint('ToggleFavorite failed: ${failure.message}'),
         (isFavorite) {
           debugPrint('ToggleFavorite success, new isFavorite: $isFavorite');
+          emit(currentState.copyWith(isFavorite: isFavorite));
           favoriteEventBus.fire(FavoriteEvent(restaurantId: event.id, isFavorite: isFavorite));
         },
       );
