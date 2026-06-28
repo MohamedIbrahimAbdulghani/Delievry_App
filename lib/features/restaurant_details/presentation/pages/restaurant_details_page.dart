@@ -10,6 +10,7 @@ import '../bloc/restaurant_detail_state.dart';
 import '../widgets/restaurant_info_header.dart';
 import '../widgets/restaurant_menu_tabs.dart';
 import '../widgets/restaurant_reviews.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
 
 class RestaurantDetailsPage extends StatefulWidget {
   final int restaurantId;
@@ -42,7 +43,7 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> with Sing
     return BlocProvider(
       create: (context) => _bloc,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: BlocBuilder<RestaurantDetailBloc, RestaurantDetailState>(
           builder: (context, state) {
             if (state is RestaurantDetailLoading) {
@@ -57,14 +58,14 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> with Sing
                       pinned: true,
                       backgroundColor: AppColors.primary,
                       leading: IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onPrimary),
                         onPressed: () => context.pop(),
                       ),
                       actions: [
                         IconButton(
                           icon: Icon(
                             state.isFavorite ? Icons.favorite : Icons.favorite_border,
-                            color: state.isFavorite ? AppColors.primary : Colors.white,
+                            color: state.isFavorite ? AppColors.primary : Theme.of(context).colorScheme.onPrimary,
                           ),
                           onPressed: () => _bloc.add(ToggleFavorite(widget.restaurantId)),
                         ),
@@ -74,7 +75,7 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> with Sing
                           restaurant.imageUrl ?? '',
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) => Container(
-                            color: Colors.grey[300],
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
                             child: const Icon(Icons.restaurant, size: 100, color: Colors.grey),
                           ),
                         ),
@@ -90,10 +91,10 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> with Sing
                           controller: _tabController,
                           indicatorColor: AppColors.primary,
                           labelColor: AppColors.primary,
-                          unselectedLabelColor: AppColors.textSecondary,
-                          tabs: const [
-                            Tab(text: 'Menu'),
-                            Tab(text: 'Reviews'),
+                          unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                          tabs: [
+                            Tab(text: AppLocalizations.of(context)?.menuTab ?? 'Menu'),
+                            Tab(text: AppLocalizations.of(context)?.reviewsTab ?? 'Reviews'),
                           ],
                         ),
                       ),
@@ -111,13 +112,13 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> with Sing
             } else if (state is RestaurantDetailError) {
               return Scaffold(
                 appBar: AppBar(
-                  backgroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.surface,
                   elevation: 0,
                   leading: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: AppColors.onBackground),
+                    icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
                     onPressed: () => context.pop(),
                   ),
-                  title: const Text('Restaurant Details', style: TextStyle(color: AppColors.onBackground)),
+                  title: Text(AppLocalizations.of(context)?.restaurantDetails ?? 'Restaurant Details', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                 ),
                 body: Center(
                   child: Padding(
@@ -127,12 +128,12 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> with Sing
                       children: [
                         const Icon(Icons.store_outlined, size: 80, color: AppColors.primary),
                         const SizedBox(height: 24),
-                        const Text(
+                        Text(
                           'Restaurant Unavailable',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.onBackground,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -141,9 +142,9 @@ class _RestaurantDetailsPageState extends State<RestaurantDetailsPage> with Sing
                               ? 'This restaurant is temporarily inactive or not accepting orders.'
                               : state.message,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
-                            color: AppColors.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                             height: 1.5,
                           ),
                         ),
@@ -174,7 +175,7 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       child: _tabBar,
     );
   }

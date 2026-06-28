@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/custom_toastr.dart';
 import '../../../../di/injection_container.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
@@ -47,15 +48,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return BlocProvider.value(
       value: _bloc,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.onBackground),
+            icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
             onPressed: () => context.pop(),
           ),
-          title: const Text('Edit Profile', style: TextStyle(color: AppColors.onBackground, fontWeight: FontWeight.bold)),
+          title: Text(AppLocalizations.of(context)?.editProfile ?? 'Edit Profile', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold)),
         ),
         body: BlocConsumer<ProfileBloc, ProfileState>(
           listener: (context, state) {
@@ -96,13 +97,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     const SizedBox(height: 40),
                     TextFormField(
                       controller: _nameController,
-                      decoration: const InputDecoration(labelText: 'Full Name', border: OutlineInputBorder()),
+                      decoration: InputDecoration(labelText: AppLocalizations.of(context)?.fullName ?? 'Full Name', border: const OutlineInputBorder()),
                       validator: (v) => v!.isEmpty ? 'Enter your name' : null,
                     ),
                     const SizedBox(height: 20),
                     TextFormField(
                       controller: _phoneController,
-                      decoration: const InputDecoration(labelText: 'Phone Number', border: OutlineInputBorder()),
+                      decoration: InputDecoration(labelText: AppLocalizations.of(context)?.phoneNumber ?? 'Phone Number', border: const OutlineInputBorder()),
                     ),
                     const SizedBox(height: 40),
                     SizedBox(
@@ -116,7 +117,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         onPressed: state is ProfileLoading ? null : _saveProfile,
                         child: state is ProfileLoading
                             ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text('Save Changes', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                            : Text(AppLocalizations.of(context)?.saveChanges ?? 'Save Changes', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],

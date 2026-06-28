@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/custom_toastr.dart';
@@ -63,18 +64,18 @@ class _LoginPageState extends State<LoginPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 48),
-                      const Text(
-                        'Welcome Back',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context)?.welcomeBack ?? 'Welcome Back',
+                        style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
                           fontFamily: 'Plus Jakarta Sans',
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
-                        'Login to your account.',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context)?.loginToYourAccount ?? 'Login to your account.',
+                        style: const TextStyle(
                           fontSize: 16,
                           color: AppColors.textSecondary,
                         ),
@@ -82,9 +83,9 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 48),
                       TextFormField(
                         controller: _emailController,
-                        decoration: const InputDecoration(
-                          hintText: 'Email',
-                          prefixIcon: Icon(Icons.email_outlined),
+                        decoration: InputDecoration(
+                          hintText: AppLocalizations.of(context)?.email ?? 'Email',
+                          prefixIcon: const Icon(Icons.email_outlined),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -97,9 +98,9 @@ class _LoginPageState extends State<LoginPage> {
                       TextFormField(
                         controller: _passwordController,
                         obscureText: true,
-                        decoration: const InputDecoration(
-                          hintText: 'Password',
-                          prefixIcon: Icon(Icons.lock_outline),
+                        decoration: InputDecoration(
+                          hintText: AppLocalizations.of(context)?.password ?? 'Password',
+                          prefixIcon: const Icon(Icons.lock_outline),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -114,15 +115,15 @@ class _LoginPageState extends State<LoginPage> {
                           onPressed: () {
                             context.push('/forgot-password');
                           },
-                          child: const Text(
-                            'Forgot Password?',
-                            style: TextStyle(color: AppColors.primary),
+                          child: Text(
+                            AppLocalizations.of(context)?.forgotPassword ?? 'Forgot Password?',
+                            style: const TextStyle(color: AppColors.primary),
                           ),
                         ),
                       ),
                       const SizedBox(height: 24),
                       PrimaryButton(
-                        text: 'Login',
+                        text: AppLocalizations.of(context)?.login ?? 'Login',
                         isLoading: isLoading,
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
@@ -139,13 +140,13 @@ class _LoginPageState extends State<LoginPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text('Don\'t have an account? '),
+                          Text(AppLocalizations.of(context)?.dontHaveAccount ?? 'Don\'t have an account? '),
                           GestureDetector(
                             onTap: () {
                               context.push('/register');
                             },
-                            child: const Text(
-                              'Sign Up',
+                            child: Text(
+                              AppLocalizations.of(context)?.registerHere ?? 'Sign Up',
                               style: TextStyle(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.bold,

@@ -8,6 +8,7 @@ import '../../../../core/events/order_events.dart';
 import '../bloc/checkout_bloc.dart';
 import '../bloc/checkout_event.dart';
 import '../bloc/checkout_state.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
 import '../../../cart/presentation/bloc/cart_bloc.dart';
 import '../../../cart/presentation/bloc/cart_event.dart';
 
@@ -42,15 +43,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
     return BlocProvider(
       create: (context) => _bloc,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.onBackground),
+            icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
             onPressed: () => context.pop(),
           ),
-          title: const Text('Checkout', style: TextStyle(color: AppColors.onBackground, fontWeight: FontWeight.bold)),
+          title: Text(AppLocalizations.of(context)?.checkout ?? 'Checkout', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold)),
         ),
         body: BlocConsumer<CheckoutBloc, CheckoutState>(
           listener: (context, state) {
@@ -71,11 +72,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionTitle('Delivery Address'),
+                  _buildSectionTitle(AppLocalizations.of(context)?.deliveryAddress ?? 'Delivery Address'),
                   const SizedBox(height: 12),
                   _buildAddressField(),
                   const SizedBox(height: 24),
-                  _buildSectionTitle('Payment Method'),
+                  _buildSectionTitle(AppLocalizations.of(context)?.paymentMethods ?? 'Payment Method'),
                   const SizedBox(height: 12),
                   _buildPaymentMethods(),
                   const SizedBox(height: 24),
@@ -94,9 +95,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       onPressed: state is CheckoutLoading ? null : _placeOrder,
                       child: state is CheckoutLoading
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text(
-                              'Place Order',
-                              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                          : Text(
+                              AppLocalizations.of(context)?.placeOrder ?? 'Place Order',
+                              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                     ),
                   ),
@@ -112,14 +113,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.onBackground),
+      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
     );
   }
 
   Widget _buildAddressField() {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(12)),
       child: Row(
         children: [
           const Icon(Icons.location_on, color: AppColors.primary),
@@ -136,7 +137,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     return Column(
       children: methods.map((m) => Container(
         margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(12)),
         // ignore: deprecated_member_use
         child: RadioListTile<String>(
           title: Text(m),
@@ -156,9 +157,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
       controller: _notesController,
       maxLines: 3,
       decoration: InputDecoration(
-        hintText: 'Add a note to your order...',
+        hintText: AppLocalizations.of(context)?.addNoteToOrder ?? 'Add a note to your order...',
         filled: true,
-        fillColor: Colors.white,
+        fillColor: Theme.of(context).colorScheme.surface,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
       ),
     );
@@ -180,12 +181,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Icon(Icons.check_circle, color: Colors.green, size: 60),
-        content: const Column(
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Success!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            SizedBox(height: 12),
-            Text('Your order has been placed successfully.', textAlign: TextAlign.center),
+            const SizedBox(height: 24),
+            Text(AppLocalizations.of(context)?.success ?? 'Success!', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(AppLocalizations.of(context)?.orderPlacedSuccessfully ?? 'Your order has been placed successfully.', textAlign: TextAlign.center),
+            const SizedBox(height: 32),
           ],
         ),
         actions: [
@@ -194,7 +197,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               onPressed: () {
                 context.go('/orders');
               },
-              child: const Text('View My Orders'),
+              child: Text(AppLocalizations.of(context)?.viewMyOrders ?? 'View My Orders'),
             ),
           ),
         ],

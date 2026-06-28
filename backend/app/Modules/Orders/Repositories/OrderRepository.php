@@ -14,7 +14,7 @@ class OrderRepository
 
     public function paginateFor(User $actor, ListQuery $query): LengthAwarePaginator
     {
-        $q = Order::query()->with(['restaurant', 'items']);
+        $q = Order::query()->with(['restaurant', 'items.product']);
 
         if ($actor->isDelivery()) {
             $q->where(function ($sub) use ($actor) {

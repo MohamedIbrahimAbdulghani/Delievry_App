@@ -274,16 +274,25 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
       // 5. Top Selling Meals (by quantity sold in items)
       final Map<String, int> mealCounts = {};
       final Map<String, double> mealPrices = {};
+      final Map<String, String> mealNames = {};
+      final Map<String, String?> mealNameArs = {};
+      final Map<String, String?> mealNameEns = {};
       for (var o in orders!) {
         for (var item in o.items) {
-          mealCounts[item.productName] = (mealCounts[item.productName] ?? 0) + item.quantity;
-          mealPrices[item.productName] = item.unitPrice;
+          final key = item.productId > 0 ? item.productId.toString() : item.productName;
+          mealCounts[key] = (mealCounts[key] ?? 0) + item.quantity;
+          mealPrices[key] = item.unitPrice;
+          mealNames[key] = item.productName;
+          mealNameArs[key] = item.productNameAr;
+          mealNameEns[key] = item.productNameEn;
         }
       }
       final sortedMeals = mealCounts.entries.toList()
         ..sort((a, b) => b.value.compareTo(a.value));
       final List<Map<String, dynamic>> topSellingMeals = sortedMeals.take(5).map((e) => {
-        'name': e.key,
+        'name': mealNames[e.key] ?? e.key,
+        'name_ar': mealNameArs[e.key],
+        'name_en': mealNameEns[e.key],
         'sales': e.value,
         'revenue': e.value * (mealPrices[e.key] ?? 0.0),
       }).toList();

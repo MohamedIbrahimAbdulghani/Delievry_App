@@ -19,16 +19,22 @@ class StoreProductRequest extends FormRequest
     {
         return [
             'restaurant_id' => ['required', 'exists:restaurants,id'],
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'array'],
+            'name.en' => ['required', 'string', 'max:255'],
+            'name.ar' => ['required', 'string', 'max:255'],
             'slug' => [
                 'nullable',
                 'string',
                 'max:255',
                 Rule::unique('products', 'slug')->where(fn ($q) => $q->where('restaurant_id', $this->input('restaurant_id'))),
             ],
-            'description' => ['nullable', 'string'],
+            'description' => ['nullable', 'array'],
+            'description.en' => ['required_with:description', 'string'],
+            'description.ar' => ['required_with:description', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
-            'category' => ['nullable', 'string', 'max:255'],
+            'category' => ['nullable', 'array'],
+            'category.en' => ['nullable', 'string', 'max:255'],
+            'category.ar' => ['nullable', 'string', 'max:255'],
             'is_available' => ['nullable', 'boolean'],
             'image_url' => ['nullable', 'string', 'max:2048'],
         ];

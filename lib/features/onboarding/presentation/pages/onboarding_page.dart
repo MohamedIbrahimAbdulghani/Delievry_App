@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../di/injection_container.dart';
 import '../bloc/onboarding_bloc.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -18,23 +19,23 @@ class _OnboardingPageState extends State<OnboardingPage> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final List<Map<String, String>> _onboardingData = [
-    {
-      'title': 'Discover Gourmet Food',
-      'description': 'Explore the best restaurants and premium food near you.',
-    },
-    {
-      'title': 'Fast Delivery',
-      'description': 'Get your favorite food delivered directly to your doorstep.',
-    },
-    {
-      'title': 'Live Tracking',
-      'description': 'Track your order in real-time on a premium map.',
-    },
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final localizations = AppLocalizations.of(context);
+    final List<Map<String, String>> _onboardingData = [
+      {
+        'title': localizations?.onboardingTitle1 ?? 'Discover Gourmet Food',
+        'description': localizations?.onboardingDesc1 ?? 'Explore the best restaurants and premium food near you.',
+      },
+      {
+        'title': localizations?.onboardingTitle2 ?? 'Fast Delivery',
+        'description': localizations?.onboardingDesc2 ?? 'Get your favorite food delivered directly to your doorstep.',
+      },
+      {
+        'title': localizations?.onboardingTitle3 ?? 'Live Tracking',
+        'description': localizations?.onboardingDesc3 ?? 'Track your order in real-time on a premium map.',
+      },
+    ];
     return BlocProvider(
       create: (_) => sl<OnboardingBloc>(),
       child: BlocListener<OnboardingBloc, OnboardingState>(
@@ -55,7 +56,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         onPressed: () {
                           context.read<OnboardingBloc>().add(CompleteOnboarding());
                         },
-                        child: const Text('Skip', style: TextStyle(color: AppColors.textSecondary)),
+                        child: Text(localizations?.skip ?? 'Skip', style: const TextStyle(color: AppColors.textSecondary)),
                       ),
                     ),
                     Expanded(
@@ -112,7 +113,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       child: BlocBuilder<OnboardingBloc, OnboardingState>(
                         builder: (context, state) {
                           return PrimaryButton(
-                            text: _currentPage == _onboardingData.length - 1 ? 'Get Started' : 'Continue',
+                            text: _currentPage == _onboardingData.length - 1 ? (localizations?.getStarted ?? 'Get Started') : (localizations?.continueText ?? 'Continue'),
                             onPressed: () {
                               if (_currentPage == _onboardingData.length - 1) {
                                 context.read<OnboardingBloc>().add(CompleteOnboarding());

@@ -22,7 +22,9 @@ class UpdateProductRequest extends FormRequest
 
         return [
             'restaurant_id' => ['sometimes', 'exists:restaurants,id'],
-            'name' => ['sometimes', 'string', 'max:255'],
+            'name' => ['sometimes', 'array'],
+            'name.en' => ['required_with:name', 'string', 'max:255'],
+            'name.ar' => ['required_with:name', 'string', 'max:255'],
             'slug' => [
                 'sometimes',
                 'string',
@@ -31,9 +33,13 @@ class UpdateProductRequest extends FormRequest
                     ->ignore($product instanceof \App\Modules\Products\Models\Product ? $product->id : null)
                     ->where(fn ($q) => $q->where('restaurant_id', $restaurantId)),
             ],
-            'description' => ['nullable', 'string'],
+            'description' => ['sometimes', 'array'],
+            'description.en' => ['required_with:description', 'string'],
+            'description.ar' => ['required_with:description', 'string'],
             'price' => ['sometimes', 'numeric', 'min:0'],
-            'category' => ['nullable', 'string', 'max:255'],
+            'category' => ['nullable', 'array'],
+            'category.en' => ['nullable', 'string', 'max:255'],
+            'category.ar' => ['nullable', 'string', 'max:255'],
             'is_available' => ['nullable', 'boolean'],
             'image_url' => ['nullable', 'string', 'max:2048'],
         ];

@@ -4,6 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/category_entity.dart';
 import '../bloc/home_bloc.dart';
 import '../bloc/home_event.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
 
 class HomeCategories extends StatelessWidget {
   final List<CategoryEntity> categories;
@@ -23,13 +24,13 @@ class HomeCategories extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
           child: Text(
-            'Categories',
+            AppLocalizations.of(context)?.categories ?? 'Categories',
             style: Theme.of(context).textTheme.displayMedium?.copyWith(
               fontSize: 20,
-            ) ?? const TextStyle(
+            ) ?? TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppColors.onBackground,
+              color: Theme.of(context).colorScheme.onSurface,
               fontFamily: 'Plus Jakarta Sans',
             ),
           ),
@@ -57,7 +58,7 @@ class HomeCategories extends StatelessWidget {
                         height: 64,
                         width: 64,
                         decoration: BoxDecoration(
-                          color: isSelected ? AppColors.primary : Colors.white,
+                          color: isSelected ? AppColors.primary : Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
@@ -79,15 +80,15 @@ class HomeCategories extends StatelessWidget {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        category.name,
+                        _getCategoryName(context, category.name),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontSize: 12,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                          color: isSelected ? AppColors.primary : AppColors.onBackground,
+                          color: isSelected ? AppColors.primary : Theme.of(context).colorScheme.onSurface,
                         ) ?? TextStyle(
                           fontSize: 12,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                          color: isSelected ? AppColors.primary : AppColors.onBackground,
+                          color: isSelected ? AppColors.primary : Theme.of(context).colorScheme.onSurface,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -105,12 +106,36 @@ class HomeCategories extends StatelessWidget {
 
   IconData _getCategoryIcon(String name) {
     switch (name.toLowerCase()) {
-      case 'pizza': return Icons.local_pizza_rounded;
-      case 'burgers': return Icons.lunch_dining_rounded;
-      case 'broast': return Icons.restaurant_menu_rounded;
-      case 'pasta': return Icons.dinner_dining_rounded;
-      case 'sides': return Icons.cookie_rounded;
+      case 'pizza': 
+      case 'بيتزا':
+        return Icons.local_pizza_rounded;
+      case 'burgers': 
+      case 'برجر':
+        return Icons.lunch_dining_rounded;
+      case 'broast': 
+      case 'بروست':
+        return Icons.restaurant_menu_rounded;
+      case 'pasta': 
+      case 'مكرونة':
+        return Icons.dinner_dining_rounded;
+      case 'sides': 
+      case 'أطباق جانبية':
+        return Icons.cookie_rounded;
       default: return Icons.fastfood_rounded;
     }
+  }
+
+  String _getCategoryName(BuildContext context, String name) {
+    if (name.toLowerCase() == 'all') return AppLocalizations.of(context)?.all ?? 'All';
+    if (Localizations.localeOf(context).languageCode == 'ar') {
+      switch (name.toLowerCase()) {
+        case 'pizza': return 'بيتزا';
+        case 'burgers': return 'برجر';
+        case 'broast': return 'بروست';
+        case 'pasta': return 'مكرونة';
+        case 'sides': return 'أطباق جانبية';
+      }
+    }
+    return name;
   }
 }

@@ -15,9 +15,15 @@ class RestaurantResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'name' => $this->name,
+            'name_en' => $this->getTranslation('name', 'en', false),
+            'name_ar' => $this->getTranslation('name', 'ar', false),
+            'name' => $this->name, // keep original for backwards compatibility or fallback
             'slug' => $this->slug,
+            'city_en' => $this->getTranslation('city', 'en', false),
+            'city_ar' => $this->getTranslation('city', 'ar', false),
             'city' => $this->city,
+            'address_en' => $this->getTranslation('address', 'en', false),
+            'address_ar' => $this->getTranslation('address', 'ar', false),
             'address' => $this->address,
             'phone' => $this->phone,
             'delivery_fee' => (string) $this->delivery_fee,

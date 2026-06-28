@@ -8,6 +8,8 @@ import '../../../cart/presentation/bloc/cart_state.dart';
 import '../../../cart/domain/entities/cart_entity.dart';
 import '../../../cart/domain/entities/cart_item_entity.dart';
 import '../../domain/entities/restaurant_detail_entity.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
+import '../../../../core/utils/data_localization_helper.dart';
 
 class RestaurantMenuTabs extends StatefulWidget {
   final RestaurantDetailEntity restaurant;
@@ -30,10 +32,32 @@ class _RestaurantMenuTabsState extends State<RestaurantMenuTabs> {
     }
   }
 
+  String _getTranslatedCategory(BuildContext context, String category) {
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    if (!isAr) return category;
+
+    switch (category.toLowerCase()) {
+      case 'broast': return 'بروست';
+      case 'burgers': return 'برجر';
+      case 'pizza': return 'بيتزا';
+      case 'pasta': return 'مكرونة';
+      case 'sides': return 'أطباق جانبية';
+      case 'meals': return 'وجبات';
+      case 'drinks': return 'مشروبات';
+      case 'desserts': return 'حلويات';
+      case 'chicken': return 'دجاج';
+      case 'seafood': return 'مأكولات بحرية';
+      case 'grills': return 'مشويات';
+      case 'sandwiches': return 'ساندوتشات';
+      case 'salads': return 'سلطات';
+      default: return category;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.restaurant.products.isEmpty) {
-      return const Center(child: Text('No items available in the menu.'));
+      return Center(child: Text(AppLocalizations.of(context)?.noItemsInMenu ?? 'No items available in the menu.'));
     }
 
     final categories = widget.restaurant.categories;
@@ -51,11 +75,11 @@ class _RestaurantMenuTabsState extends State<RestaurantMenuTabs> {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Text(
-                category,
-                style: const TextStyle(
+                _getTranslatedCategory(context, category),
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.onBackground,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),
@@ -73,9 +97,9 @@ class _RestaurantMenuTabsState extends State<RestaurantMenuTabs> {
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.outline),
+          border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1)),
         ),
         child: Row(
           children: [
@@ -85,16 +109,16 @@ class _RestaurantMenuTabsState extends State<RestaurantMenuTabs> {
                 children: [
                   Text(
                     product.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.onBackground,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     product.description,
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -103,7 +127,7 @@ class _RestaurantMenuTabsState extends State<RestaurantMenuTabs> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '\$${product.price.toStringAsFixed(2)}',
+                        DataLocalizationHelper.formatCurrency(context, product.price),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -188,19 +212,19 @@ class _RestaurantMenuTabsState extends State<RestaurantMenuTabs> {
                                       decoration: BoxDecoration(
                                         color: Colors.transparent,
                                         shape: BoxShape.circle,
-                                        border: Border.all(color: Colors.grey.shade300),
+                                        border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
                                       ),
-                                      child: const Icon(Icons.remove, color: Colors.black54, size: 18),
+                                      child: Icon(Icons.remove, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), size: 18),
                                     ),
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 12),
                                     child: Text(
                                       '${item.quantity}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
-                                        color: AppColors.onBackground,
+                                        color: Theme.of(context).colorScheme.onSurface,
                                       ),
                                     ),
                                   ),
@@ -217,9 +241,9 @@ class _RestaurantMenuTabsState extends State<RestaurantMenuTabs> {
                                       decoration: BoxDecoration(
                                         color: Colors.transparent,
                                         shape: BoxShape.circle,
-                                        border: Border.all(color: Colors.grey.shade300),
+                                        border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
                                       ),
-                                      child: const Icon(Icons.add, color: Colors.black54, size: 18),
+                                      child: Icon(Icons.add, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), size: 18),
                                     ),
                                   ),
                                 ],
@@ -244,7 +268,7 @@ class _RestaurantMenuTabsState extends State<RestaurantMenuTabs> {
                 errorBuilder: (context, error, stackTrace) => Container(
                   width: 80,
                   height: 80,
-                  color: Colors.grey[200],
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   child: const Icon(Icons.fastfood, color: Colors.grey),
                 ),
               ),

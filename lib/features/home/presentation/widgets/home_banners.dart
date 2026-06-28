@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/banner_entity.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
 
 class HomeBanners extends StatelessWidget {
   final List<BannerEntity> banners;
@@ -37,7 +38,7 @@ class HomeBanners extends StatelessWidget {
                 children: [
                   if (banner.title != null)
                     Text(
-                      banner.title!,
+                      _getBannerTitle(context, banner.title!),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
@@ -46,7 +47,7 @@ class HomeBanners extends StatelessWidget {
                     ),
                   if (banner.description != null)
                     Text(
-                      banner.description!,
+                      _getBannerDescription(context, banner.description!),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14,
@@ -59,5 +60,20 @@ class HomeBanners extends StatelessWidget {
         },
       ),
     );
+  }
+  String _getBannerTitle(BuildContext context, String title) {
+    if (Localizations.localeOf(context).languageCode == 'ar') {
+      if (title.toLowerCase() == 'special offer') return AppLocalizations.of(context)?.specialOffer ?? 'عرض خاص';
+      if (title.toLowerCase() == 'new pizza') return 'بيتزا جديدة';
+    }
+    return title;
+  }
+
+  String _getBannerDescription(BuildContext context, String desc) {
+    if (Localizations.localeOf(context).languageCode == 'ar') {
+      if (desc.toLowerCase() == 'get 50% off on your first order') return AppLocalizations.of(context)?.get50Off ?? 'احصل على خصم 50% على طلبك الأول';
+      if (desc.toLowerCase() == 'try our new italian pizza') return 'جرب البيتزا الإيطالية الجديدة';
+    }
+    return desc;
   }
 }

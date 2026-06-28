@@ -4,6 +4,7 @@ import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/auth/session_manager.dart';
+import '../core/settings/presentation/bloc/settings_cubit.dart';
 import '../core/events/favorite_events.dart';
 import '../core/events/order_events.dart';
 import '../core/network/dio_client.dart';
@@ -95,7 +96,10 @@ Future<void> init() async {
   sl.registerLazySingleton(() => FavoriteEventBus());
   sl.registerLazySingleton(() => OrderEventBus());
   sl.registerLazySingleton(() => Dio());
-  sl.registerLazySingleton(() => DioClient(dio: sl(), secureStorage: sl()));
+  sl.registerLazySingleton(() => DioClient(dio: sl(), secureStorage: sl(), sharedPreferences: sl()));
+
+  // Settings
+  sl.registerLazySingleton(() => SettingsCubit(sharedPreferences: sl()));
 
   // Features
   // Splash

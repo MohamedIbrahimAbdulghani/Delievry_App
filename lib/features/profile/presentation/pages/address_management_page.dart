@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../di/injection_container.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
@@ -29,15 +30,15 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
     return BlocProvider(
       create: (context) => _bloc,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.onBackground),
+            icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
             onPressed: () => context.pop(),
           ),
-          title: const Text('My Addresses', style: TextStyle(color: AppColors.onBackground, fontWeight: FontWeight.bold)),
+          title: Text(AppLocalizations.of(context)?.myAddresses ?? 'My Addresses', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold)),
           actions: [
             IconButton(
               icon: const Icon(Icons.add, color: AppColors.primary),
@@ -58,7 +59,7 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
                   return Container(
                     margin: const EdgeInsets.only(bottom: 16),
                     padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(12)),
                     child: Row(
                       children: [
                         Container(
@@ -71,8 +72,8 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(address.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                              Text(address.address, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                              Text(address.name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Theme.of(context).colorScheme.onSurface)),
+                              Text(address.address, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 14)),
                             ],
                           ),
                         ),
@@ -80,7 +81,7 @@ class _AddressManagementPageState extends State<AddressManagementPage> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(color: Colors.green.withAlpha(26), borderRadius: BorderRadius.circular(4)),
-                            child: const Text('Default', style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold)),
+                            child: Text(AppLocalizations.of(context)?.defaultAddress ?? 'Default', style: const TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold)),
                           ),
                         IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
                       ],

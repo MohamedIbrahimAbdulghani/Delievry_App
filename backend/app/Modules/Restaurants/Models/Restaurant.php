@@ -6,9 +6,13 @@ use App\Modules\Orders\Models\Order;
 use App\Modules\Products\Models\Product;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Translatable\HasTranslations;
 
 class Restaurant extends Model
 {
+    use HasTranslations;
+
+    public $translatable = ['name', 'city', 'address'];
     protected $fillable = [
         'name',
         'slug',

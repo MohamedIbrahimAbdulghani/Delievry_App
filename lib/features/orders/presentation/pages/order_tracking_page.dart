@@ -13,6 +13,7 @@ import '../../domain/entities/order_entity.dart';
 import '../bloc/orders_bloc.dart';
 import '../bloc/orders_event.dart';
 import '../bloc/orders_state.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
 
 class OrderTrackingPage extends StatefulWidget {
   final int orderId;
@@ -111,11 +112,11 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                             height: 50,
                             child: Container(
                               padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
                                 shape: BoxShape.circle,
                                 boxShadow: [
-                                  BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2)),
+                                  BoxShadow(color: Theme.of(context).shadowColor.withAlpha(50), blurRadius: 6, offset: const Offset(0, 2)),
                                 ],
                               ),
                               child: const Icon(
@@ -131,11 +132,11 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                             height: 50,
                             child: Container(
                               padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
                                 shape: BoxShape.circle,
                                 boxShadow: [
-                                  BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2)),
+                                  BoxShadow(color: Theme.of(context).shadowColor.withAlpha(50), blurRadius: 6, offset: const Offset(0, 2)),
                                 ],
                               ),
                               child: const Icon(
@@ -154,14 +155,14 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                     top: 40,
                     left: 16,
                     child: CircleAvatar(
-                      backgroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.surface,
                       child: IconButton(
-                        icon: const Icon(Icons.arrow_back, color: AppColors.onBackground),
+                        icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
                         onPressed: () => context.pop(),
                       ),
                     ),
                   ),
-                  _buildTrackingInfo(order),
+                  _buildTrackingInfo(context, order),
                 ],
               );
             } else if (state is OrdersError && _lastOrder == null) {
@@ -174,7 +175,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
     );
   }
 
-  Widget _buildTrackingInfo(OrderEntity order) {
+  Widget _buildTrackingInfo(BuildContext context, OrderEntity order) {
     final status = order.status;
     String statusTitle = 'Order Submitted';
     String statusDesc = 'Waiting for restaurant approval.';
@@ -183,50 +184,50 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
 
     switch (status) {
       case OrderStatus.pending:
-        statusTitle = 'Order Submitted';
-        statusDesc = 'Waiting for restaurant approval.';
+        statusTitle = AppLocalizations.of(context)?.orderSubmitted ?? 'Order Submitted';
+        statusDesc = AppLocalizations.of(context)?.orderSubmittedDesc ?? 'Waiting for restaurant approval.';
         progress = 0.125;
         statusIcon = Icons.receipt_long_rounded;
         break;
       case OrderStatus.preparing:
-        statusTitle = 'Preparing your order';
-        statusDesc = 'The restaurant is preparing your food.';
+        statusTitle = AppLocalizations.of(context)?.preparingOrder ?? 'Preparing your order';
+        statusDesc = AppLocalizations.of(context)?.preparingOrderDesc ?? 'The restaurant is preparing your food.';
         progress = 0.25;
         statusIcon = Icons.restaurant_rounded;
         break;
       case OrderStatus.heading_to_restaurant:
-        statusTitle = 'Heading to Restaurant';
-        statusDesc = 'A delivery partner is heading to pick up your order.';
+        statusTitle = AppLocalizations.of(context)?.headingToRestaurant ?? 'Heading to Restaurant';
+        statusDesc = AppLocalizations.of(context)?.headingToRestaurantDesc ?? 'A delivery partner is heading to pick up your order.';
         progress = 0.375;
         statusIcon = Icons.directions_run_rounded;
         break;
       case OrderStatus.picked_up:
-        statusTitle = 'Order Picked Up';
-        statusDesc = 'Driver has collected your food and is preparing delivery.';
+        statusTitle = AppLocalizations.of(context)?.orderPickedUp ?? 'Order Picked Up';
+        statusDesc = AppLocalizations.of(context)?.orderPickedUpDesc ?? 'Driver has collected your food and is preparing delivery.';
         progress = 0.5;
         statusIcon = Icons.local_shipping_rounded;
         break;
       case OrderStatus.out_for_delivery:
-        statusTitle = 'Out for Delivery';
-        statusDesc = 'Driver is on the way to your location.';
+        statusTitle = AppLocalizations.of(context)?.outForDelivery ?? 'Out for Delivery';
+        statusDesc = AppLocalizations.of(context)?.outForDeliveryDesc ?? 'Driver is on the way to your location.';
         progress = 0.75;
         statusIcon = Icons.delivery_dining_rounded;
         break;
       case OrderStatus.delivered:
-        statusTitle = 'Order Delivered';
-        statusDesc = 'Enjoy your meal!';
+        statusTitle = AppLocalizations.of(context)?.orderDelivered ?? 'Order Delivered';
+        statusDesc = AppLocalizations.of(context)?.orderDeliveredDesc ?? 'Enjoy your meal!';
         progress = 1.0;
         statusIcon = Icons.check_circle_rounded;
         break;
       case OrderStatus.failed:
-        statusTitle = 'Delivery Failed';
-        statusDesc = 'There was an issue delivering your order.';
+        statusTitle = AppLocalizations.of(context)?.deliveryFailed ?? 'Delivery Failed';
+        statusDesc = AppLocalizations.of(context)?.deliveryFailedDesc ?? 'There was an issue delivering your order.';
         progress = 1.0;
         statusIcon = Icons.error_outline_rounded;
         break;
       case OrderStatus.cancelled:
-        statusTitle = 'Order Cancelled';
-        statusDesc = 'This order was cancelled.';
+        statusTitle = AppLocalizations.of(context)?.orderCancelled ?? 'Order Cancelled';
+        statusDesc = AppLocalizations.of(context)?.orderCancelledDesc ?? 'This order was cancelled.';
         progress = 1.0;
         statusIcon = Icons.cancel_outlined;
         break;
@@ -238,11 +239,11 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
       right: 0,
       child: Container(
         padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
           boxShadow: [
-            BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -5)),
+            BoxShadow(color: Theme.of(context).shadowColor.withAlpha(20), blurRadius: 10, offset: const Offset(0, -5)),
           ],
         ),
         child: Column(
@@ -264,8 +265,8 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(statusTitle, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                      Text(statusDesc, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                      Text(statusTitle, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Theme.of(context).colorScheme.onSurface)),
+                      Text(statusDesc, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 14)),
                     ],
                   ),
                 ),
@@ -274,7 +275,7 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
             const SizedBox(height: 24),
             LinearProgressIndicator(
               value: progress,
-              backgroundColor: Colors.grey[200],
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               color: AppColors.primary,
               minHeight: 6,
               borderRadius: BorderRadius.circular(3),
@@ -293,8 +294,8 @@ class _OrderTrackingPageState extends State<OrderTrackingPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(order.driver?.name ?? 'Driver Captain', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      const Text('Delivery Partner', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                      Text(order.driver?.name ?? 'Driver Captain', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Theme.of(context).colorScheme.onSurface)),
+                      Text('Delivery Partner', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 12)),
                     ],
                   ),
                 ),

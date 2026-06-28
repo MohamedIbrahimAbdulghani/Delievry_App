@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/primary_button.dart';
@@ -68,18 +69,18 @@ class _RegisterPageState extends State<RegisterPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Create Account',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context)?.register ?? 'Create Account',
+                        style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
                           fontFamily: 'Plus Jakarta Sans',
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
-                        'Sign up to get started.',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context)?.signUpToGetStarted ?? 'Sign up to get started.',
+                        style: const TextStyle(
                           fontSize: 16,
                           color: AppColors.textSecondary,
                         ),
@@ -87,9 +88,9 @@ class _RegisterPageState extends State<RegisterPage> {
                       const SizedBox(height: 48),
                       TextFormField(
                         controller: _nameController,
-                        decoration: const InputDecoration(
-                          hintText: 'Full Name',
-                          prefixIcon: Icon(Icons.person_outline),
+                        decoration: InputDecoration(
+                          hintText: AppLocalizations.of(context)?.fullName ?? 'Full Name',
+                          prefixIcon: const Icon(Icons.person_outline),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -101,9 +102,9 @@ class _RegisterPageState extends State<RegisterPage> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _emailController,
-                        decoration: const InputDecoration(
-                          hintText: 'Email',
-                          prefixIcon: Icon(Icons.email_outlined),
+                        decoration: InputDecoration(
+                          hintText: AppLocalizations.of(context)?.email ?? 'Email',
+                          prefixIcon: const Icon(Icons.email_outlined),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -116,9 +117,9 @@ class _RegisterPageState extends State<RegisterPage> {
                       TextFormField(
                         controller: _passwordController,
                         obscureText: true,
-                        decoration: const InputDecoration(
-                          hintText: 'Password',
-                          prefixIcon: Icon(Icons.lock_outline),
+                        decoration: InputDecoration(
+                          hintText: AppLocalizations.of(context)?.password ?? 'Password',
+                          prefixIcon: const Icon(Icons.lock_outline),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -129,7 +130,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       const SizedBox(height: 48),
                       PrimaryButton(
-                        text: 'Sign Up',
+                        text: AppLocalizations.of(context)?.registerHere ?? 'Sign Up',
                         isLoading: isLoading,
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
@@ -147,13 +148,13 @@ class _RegisterPageState extends State<RegisterPage> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text('Already have an account? '),
+                          Text(AppLocalizations.of(context)?.alreadyHaveAccount ?? 'Already have an account? '),
                           GestureDetector(
                             onTap: () {
                               context.pop();
                             },
-                            child: const Text(
-                              'Login',
+                            child: Text(
+                              AppLocalizations.of(context)?.loginHere ?? 'Login',
                               style: TextStyle(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.bold,

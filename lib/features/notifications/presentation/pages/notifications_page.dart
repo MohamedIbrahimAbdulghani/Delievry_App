@@ -8,6 +8,7 @@ import '../bloc/notifications_bloc.dart';
 import '../bloc/notifications_event.dart';
 import '../bloc/notifications_state.dart';
 import '../../domain/entities/notification_entity.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -30,15 +31,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
     return BlocProvider(
       create: (context) => _bloc,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 0,
-          title: const Text(
-            'Notifications',
-            style: TextStyle(color: AppColors.onBackground, fontWeight: FontWeight.bold),
+          title: Text(
+            AppLocalizations.of(context)?.notifications ?? 'Notifications',
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold),
           ),
-          iconTheme: const IconThemeData(color: AppColors.onBackground),
+          iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
           actions: [
             BlocBuilder<NotificationsBloc, NotificationsState>(
               bloc: _bloc,
@@ -102,13 +103,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
         children: [
           Icon(Icons.notifications_none_outlined, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 16),
-          const Text(
-            'No notifications yet',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.onBackground),
+          Text(
+            AppLocalizations.of(context)?.noNotifications ?? 'No notifications yet',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
           ),
           const SizedBox(height: 8),
           Text(
-            'We will notify you when something happens.',
+            AppLocalizations.of(context)?.youHaveNoNotifications ?? 'We will notify you when something happens.',
             style: TextStyle(fontSize: 14, color: Colors.grey[500]),
           ),
         ],
@@ -116,16 +117,30 @@ class _NotificationsPageState extends State<NotificationsPage> {
     );
   }
 
+  String _getTranslatedTitle(BuildContext context, String title) {
+    if (title == 'Order Delivered') return AppLocalizations.of(context)?.orderDelivered ?? title;
+    if (title == 'Order Submitted') return AppLocalizations.of(context)?.orderSubmitted ?? title;
+    if (title == 'Order Cancelled') return AppLocalizations.of(context)?.orderCancelled ?? title;
+    return title;
+  }
+
+  String _getTranslatedBody(BuildContext context, String body) {
+    if (body.contains('Your order has arrived successfully')) {
+      return AppLocalizations.of(context)?.notificationDeliveredBody ?? body;
+    }
+    return body;
+  }
+
   Widget _buildNotificationCard(NotificationEntity notification) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: notification.isRead ? Colors.white : AppColors.primary.withAlpha(8),
+        color: notification.isRead ? Theme.of(context).colorScheme.surface : AppColors.primary.withAlpha(20),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             // ignore: deprecated_member_use
-            color: Colors.black.withOpacity(0.04),
+            color: Theme.of(context).shadowColor.withOpacity(0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -188,11 +203,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         children: [
                           Expanded(
                             child: Text(
-                              notification.title,
+                              _getTranslatedTitle(context, notification.title),
                               style: TextStyle(
                                 fontWeight: notification.isRead ? FontWeight.w600 : FontWeight.bold,
                                 fontSize: 16,
-                                color: AppColors.onBackground,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                           ),
@@ -209,10 +224,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        notification.body,
+                        _getTranslatedBody(context, notification.body),
                         style: TextStyle(
                           fontSize: 14,
-                          color: notification.isRead ? AppColors.textSecondary : AppColors.onBackground,
+                          color: notification.isRead ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6) : Theme.of(context).colorScheme.onSurface,
                           height: 1.3,
                         ),
                       ),
@@ -249,9 +264,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           ),
                           icon: const Icon(Icons.star_outline, size: 18),
-                          label: const Text(
-                            'Rate Restaurant',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                          label: Text(
+                            AppLocalizations.of(context)?.rateRestaurant ?? 'Rate Restaurant',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                       ] else if (notification.orderId != null && notification.isRated) ...[
@@ -261,7 +276,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             const Icon(Icons.check_circle_outline, color: Colors.green, size: 18),
                             const SizedBox(width: 6),
                             Text(
-                              'Rated successfully',
+                              AppLocalizations.of(context)?.ratedSuccessfully ?? 'Rated successfully',
                               style: TextStyle(color: Colors.green[700], fontWeight: FontWeight.bold, fontSize: 13),
                             ),
                           ],

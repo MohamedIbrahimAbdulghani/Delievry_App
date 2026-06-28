@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 
+import '../../../../l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/custom_toastr.dart';
 import '../../../../core/widgets/shimmer_skeletons.dart';
@@ -18,9 +19,13 @@ import '../../../orders/domain/entities/order_entity.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../../profile/domain/repositories/user_repository.dart';
 import '../../../notifications/domain/entities/notification_entity.dart';
+import '../../../../core/settings/presentation/bloc/settings_cubit.dart';
+import '../../../../core/settings/presentation/bloc/settings_state.dart';
 import '../bloc/admin_bloc.dart';
 import '../bloc/admin_event.dart';
 import '../bloc/admin_state.dart';
+import '../../../../core/utils/data_localization_helper.dart';
+import 'package:intl/intl.dart' as intl;
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -36,16 +41,30 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   List<NotificationEntity> _notifications = [];
   StreamSubscription? _notificationSubscription;
 
-  final List<Map<String, dynamic>> _tabs = [
-    {'title': 'Dashboard', 'icon': Icons.dashboard_rounded},
-    {'title': 'Orders', 'icon': Icons.receipt_long_rounded},
-    {'title': 'Restaurants', 'icon': Icons.restaurant_rounded},
-    {'title': 'Meals', 'icon': Icons.fastfood_rounded},
-    {'title': 'Categories', 'icon': Icons.category_rounded},
-    {'title': 'Users', 'icon': Icons.people_rounded},
-    {'title': 'Analytics', 'icon': Icons.bar_chart_rounded},
-    {'title': 'Settings', 'icon': Icons.settings_rounded},
+  final List<IconData> _tabIcons = [
+    Icons.dashboard_rounded,
+    Icons.receipt_long_rounded,
+    Icons.restaurant_rounded,
+    Icons.fastfood_rounded,
+    Icons.category_rounded,
+    Icons.people_rounded,
+    Icons.bar_chart_rounded,
+    Icons.settings_rounded,
   ];
+
+  List<String> _tabTitles(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return [
+      l?.tabDashboard ?? 'Dashboard',
+      l?.tabOrders ?? 'Orders',
+      l?.tabRestaurants ?? 'Restaurants',
+      l?.tabMeals ?? 'Meals',
+      l?.tabCategories ?? 'Categories',
+      l?.tabUsers ?? 'Users',
+      l?.tabAnalytics ?? 'Analytics',
+      l?.tabSettings ?? 'Settings',
+    ];
+  }
 
   @override
   void initState() {
@@ -191,6 +210,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Widget _buildNotificationPanel() {
+    final l = AppLocalizations.of(context);
     final unread = _notifications.where((n) => !n.isRead).toList();
     return SafeArea(
       child: Column(
@@ -201,14 +221,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Notifications',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.onBackground),
+                Text(
+                  l?.notifications ?? 'Notifications',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
                 ),
                 if (unread.isNotEmpty)
                   TextButton(
                     onPressed: _markAllNotificationsRead,
-                    child: const Text('Mark all as read'),
+                    child: Text(l?.markAllAsRead ?? 'Mark all as read'),
                   ),
               ],
             ),
@@ -216,13 +236,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           const Divider(height: 1),
           Expanded(
             child: _notifications.isEmpty
-                ? const Center(
+                ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.notifications_none_rounded, size: 48, color: AppColors.textSecondary),
-                        SizedBox(height: 8),
-                        Text('No notifications yet', style: TextStyle(color: AppColors.textSecondary)),
+                        Icon(Icons.notifications_none_rounded, size: 48, color: Theme.of(context).colorScheme.onSurface.withAlpha(100)),
+                        const SizedBox(height: 8),
+                        Text(l?.noNotificationsYet ?? 'No notifications yet', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(150))),
                       ],
                     ),
                   )
@@ -249,7 +269,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                               const SizedBox(height: 4),
                               Text(
                                 _formatDate(n.createdAt),
-                                style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                                style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurface.withAlpha(120)),
                               ),
                             ],
                           ),
@@ -258,7 +278,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                               : IconButton(
                                   icon: const Icon(Icons.circle, color: AppColors.primary, size: 12),
                                   onPressed: () => _markNotificationRead(n.id),
-                                  tooltip: 'Mark as read',
+                                  tooltip: l?.markAllAsRead ?? 'Mark as read',
                                 ),
                           onTap: () {
                             if (!n.isRead) {
@@ -295,19 +315,65 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           },
         ),
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 1,
           title: Text(
-            'Admin: ${_tabs[_activeTab]['title']}',
-            style: const TextStyle(color: AppColors.onBackground, fontWeight: FontWeight.bold),
+            '${AppLocalizations.of(context)?.adminDashboard ?? "Admin"}: ${_tabTitles(context)[_activeTab]}',
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold),
           ),
           leading: MediaQuery.of(context).size.width < 800
               ? IconButton(
-                  icon: const Icon(Icons.menu, color: AppColors.onBackground),
+                  icon: Icon(Icons.menu, color: Theme.of(context).colorScheme.onSurface),
                   onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                 )
               : const Icon(Icons.admin_panel_settings_rounded, color: AppColors.primary),
           actions: [
+            BlocBuilder<SettingsCubit, SettingsState>(
+              builder: (context, settingsState) {
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Premium language indicator
+                    InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () => context.read<SettingsCubit>().toggleLocale(),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withAlpha(25),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.language, color: AppColors.primary, size: 18),
+                            const SizedBox(width: 4),
+                            Text(
+                              settingsState.locale.languageCode == 'ar' ? 'AR' : 'EN',
+                              style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    // Animated theme toggle
+                    IconButton(
+                      icon: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        transitionBuilder: (child, animation) => RotationTransition(turns: animation, child: child),
+                        child: Icon(
+                          settingsState.themeMode == ThemeMode.dark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                          key: ValueKey(settingsState.themeMode),
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      onPressed: () => context.read<SettingsCubit>().toggleTheme(),
+                    ),
+                  ],
+                );
+              },
+            ),
             Stack(
               alignment: Alignment.center,
               children: [
@@ -361,9 +427,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             if (MediaQuery.of(context).size.width >= 800)
               Container(
                 width: 240,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  border: Border(right: BorderSide(color: AppColors.outline, width: 1)),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  border: BorderDirectional(end: BorderSide(color: Theme.of(context).dividerColor, width: 1)),
                 ),
                 child: _buildSidebar(context),
               ),
@@ -424,21 +490,23 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Widget _buildSidebar(BuildContext context, {bool isDrawer = false}) {
+    final l = AppLocalizations.of(context);
+    final titles = _tabTitles(context);
     return Column(
       children: [
         Container(
           padding: const EdgeInsets.all(24),
-          alignment: Alignment.centerLeft,
-          child: const Column(
+          alignment: AlignmentDirectional.centerStart,
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Delivry Hub',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.primary),
+                l?.delivryHub ?? 'Delivry Hub',
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.primary),
               ),
               Text(
-                'Platform Control',
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                l?.platformControl ?? 'Platform Control',
+                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withAlpha(150)),
               ),
             ],
           ),
@@ -446,19 +514,18 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         const Divider(height: 1),
         Expanded(
           child: ListView.builder(
-            itemCount: _tabs.length,
+            itemCount: _tabIcons.length,
             itemBuilder: (context, index) {
-              final tab = _tabs[index];
               final isSelected = _activeTab == index;
               return ListTile(
                 leading: Icon(
-                  tab['icon'],
-                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                  _tabIcons[index],
+                  color: isSelected ? AppColors.primary : Theme.of(context).colorScheme.onSurface.withAlpha(150),
                 ),
                 title: Text(
-                  tab['title'],
+                  titles[index],
                   style: TextStyle(
-                    color: isSelected ? AppColors.primary : AppColors.onBackground,
+                    color: isSelected ? AppColors.primary : Theme.of(context).colorScheme.onSurface,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
@@ -481,15 +548,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   void _showLogoutConfirmation(BuildContext context) {
+    final l = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Logout'),
-        content: const Text('Are you sure you want to log out of the admin panel?'),
+        title: Text(l?.confirmLogout ?? 'Confirm Logout'),
+        content: Text(l?.logoutConfirmationText ?? 'Are you sure you want to log out of the admin panel?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: Text(l?.cancel ?? 'Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(150))),
           ),
           TextButton(
             onPressed: () async {
@@ -502,7 +570,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 context.go('/login');
               }
             },
-            child: const Text('Logout', style: TextStyle(color: Colors.red)),
+            child: Text(l?.logout ?? 'Logout', style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -573,10 +641,34 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
+  String _localizedStatus(BuildContext context, OrderStatus status) {
+    final l = AppLocalizations.of(context);
+    switch (status) {
+      case OrderStatus.pending:
+        return l?.statusPending ?? 'Pending';
+      case OrderStatus.preparing:
+        return l?.statusPreparing ?? 'Preparing';
+      case OrderStatus.heading_to_restaurant:
+        return l?.statusHeadingToRestaurant ?? 'Heading to Restaurant';
+      case OrderStatus.picked_up:
+        return l?.statusPickedUp ?? 'Picked Up';
+      case OrderStatus.out_for_delivery:
+        return l?.statusOutForDelivery ?? 'Out for Delivery';
+      case OrderStatus.delivered:
+        return l?.statusDelivered ?? 'Delivered';
+      case OrderStatus.failed:
+        return l?.statusFailed ?? 'Failed';
+      case OrderStatus.cancelled:
+        return l?.statusCancelled ?? 'Cancelled';
+    }
+  }
+
   // -------------------------------------------------------------
   // TAB 0: DASHBOARD VIEW
   // -------------------------------------------------------------
   Widget _buildDashboardView(AdminLoaded state) {
+    final l = AppLocalizations.of(context);
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     final pendingCount = state.orders.where((o) => o.status == OrderStatus.pending).length;
     final totalDrivers = state.drivers.length;
 
@@ -599,50 +691,50 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             childAspectRatio: 1.5,
             children: [
               _buildStatCard(
-                'Total Revenue',
-                '\$${state.totalRevenue.toStringAsFixed(2)}',
+                l?.statTotalRevenue ?? 'Total Revenue',
+                DataLocalizationHelper.formatCurrency(context, state.totalRevenue),
                 Icons.monetization_on_rounded,
                 [const Color(0xFF43A047), const Color(0xFF66BB6A)],
               ),
               _buildStatCard(
-                'Total Orders',
-                '${state.totalOrders}',
+                l?.statTotalOrders ?? 'Total Orders',
+                DataLocalizationHelper.formatNumber(context, state.totalOrders),
                 Icons.shopping_bag_rounded,
                 [const Color(0xFF1E88E5), const Color(0xFF42A5F5)],
               ),
               _buildStatCard(
-                'Pending Orders',
-                '$pendingCount',
+                l?.statPendingOrders ?? 'Pending Orders',
+                DataLocalizationHelper.formatNumber(context, pendingCount),
                 Icons.pending_actions_rounded,
                 [const Color(0xFFFDD835), const Color(0xFFFBC02D)],
               ),
               _buildStatCard(
-                'Restaurants',
-                '${state.totalRestaurants}',
+                l?.statRestaurants ?? 'Restaurants',
+                DataLocalizationHelper.formatNumber(context, state.totalRestaurants),
                 Icons.restaurant_rounded,
                 [const Color(0xFFF4511E), const Color(0xFFFF7043)],
               ),
               _buildStatCard(
-                'Meals Available',
-                '${state.totalMeals}',
+                l?.statMealsAvailable ?? 'Meals Available',
+                DataLocalizationHelper.formatNumber(context, state.totalMeals),
                 Icons.fastfood_rounded,
                 [const Color(0xFFE53935), const Color(0xFFEF5350)],
               ),
               _buildStatCard(
-                'Categories',
-                '${state.totalCategories}',
+                l?.statCategories ?? 'Categories',
+                DataLocalizationHelper.formatNumber(context, state.totalCategories),
                 Icons.category_rounded,
                 [const Color(0xFF00ACC1), const Color(0xFF26C6DA)],
               ),
               _buildStatCard(
-                'Active Drivers',
-                '$totalDrivers',
+                l?.statActiveDrivers ?? 'Active Drivers',
+                DataLocalizationHelper.formatNumber(context, totalDrivers),
                 Icons.delivery_dining_rounded,
                 [const Color(0xFF8E24AA), const Color(0xFFAB47BC)],
               ),
               _buildStatCard(
-                'Users Registered',
-                '${state.totalUsers}',
+                l?.statUsersRegistered ?? 'Users Registered',
+                DataLocalizationHelper.formatNumber(context, state.totalUsers),
                 Icons.people_rounded,
                 [const Color(0xFF5E35B1), const Color(0xFF7E57C2)],
               ),
@@ -663,13 +755,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Latest Orders',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        Text(
+                          l?.latestOrders ?? 'Latest Orders',
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 16),
                         state.recentOrders.isEmpty
-                            ? const Center(child: Text('No orders yet.'))
+                            ? Center(child: Text(l?.noOrdersYet ?? 'No orders yet.'))
                             : ListView.separated(
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
@@ -677,15 +769,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                 separatorBuilder: (context, index) => const Divider(),
                                 itemBuilder: (context, index) {
                                   final order = state.recentOrders[index];
+                                  final restName = isAr ? (order.restaurant.nameAr ?? order.restaurant.name) : (order.restaurant.nameEn ?? order.restaurant.name);
                                   return ListTile(
                                     contentPadding: EdgeInsets.zero,
                                     title: Text(
-                                      'Order #${order.id} - ${order.restaurant.name}',
+                                      '${l?.orderLabel ?? "Order"} #${DataLocalizationHelper.formatNumber(context, order.id)} - $restName',
                                       style: const TextStyle(fontWeight: FontWeight.w600),
                                     ),
-                                    subtitle: Text('${_formatDate(order.createdAt)} | Status: ${order.status.displayName}'),
+                                    subtitle: Text('${_formatDate(order.createdAt)} | ${l?.statusLabel ?? "Status"}: ${_localizedStatus(context, order.status)}'),
                                     trailing: Text(
-                                      '\$${order.totalAmount.toStringAsFixed(2)}',
+                                      DataLocalizationHelper.formatCurrency(context, order.totalAmount),
                                       style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
                                     ),
                                   );
@@ -707,13 +800,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Top Restaurants',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          Text(
+                            l?.topRestaurants ?? 'Top Restaurants',
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 16),
                           state.topPerformingRestaurants.isEmpty
-                              ? const Center(child: Text('No performance data.'))
+                              ? Center(child: Text(l?.noPerformanceData ?? 'No performance data.'))
                               : ListView.separated(
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
@@ -728,7 +821,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                         style: const TextStyle(fontWeight: FontWeight.w600),
                                       ),
                                       trailing: Text(
-                                        '\$${rest['revenue'].toStringAsFixed(2)}',
+                                        DataLocalizationHelper.formatCurrency(context, rest['revenue']),
                                         style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
                                       ),
                                     );
@@ -789,6 +882,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   OrderStatus? _orderFilterStatus;
 
   Widget _buildOrdersView(AdminLoaded state) {
+    final l = AppLocalizations.of(context);
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     final filtered = state.orders.where((o) {
       final matchesSearch = o.id.toString().contains(_orderSearchQuery) ||
           o.restaurant.name.toLowerCase().contains(_orderSearchQuery.toLowerCase()) ||
@@ -807,10 +902,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               Expanded(
                 child: TextField(
                   decoration: InputDecoration(
-                    hintText: 'Search orders by ID, restaurant, or address...',
+                    hintText: l?.searchOrders2 ?? 'Search orders by ID, restaurant, or address...',
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.surface,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                   ),
                   onChanged: (v) => setState(() => _orderSearchQuery = v),
@@ -819,12 +914,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               const SizedBox(width: 16),
               DropdownButton<OrderStatus?>(
                 value: _orderFilterStatus,
-                hint: const Text('Filter Status'),
+                hint: Text(l?.filterStatus ?? 'Filter Status'),
                 items: [
-                  const DropdownMenuItem(value: null, child: Text('All Statuses')),
+                  DropdownMenuItem(value: null, child: Text(l?.allStatuses ?? 'All Statuses')),
                   ...OrderStatus.values.map((s) => DropdownMenuItem(
                         value: s,
-                        child: Text(s.displayName),
+                        child: Text(_localizedStatus(context, s)),
                       ))
                 ],
                 onChanged: (s) => setState(() => _orderFilterStatus = s),
@@ -835,19 +930,20 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           // Orders List
           Expanded(
             child: filtered.isEmpty
-                ? const Center(child: Text('No matching orders found.'))
+                ? Center(child: Text(l?.noMatchingOrders ?? 'No matching orders found.'))
                 : ListView.builder(
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final order = filtered[index];
+                      final restName = isAr ? (order.restaurant.nameAr ?? order.restaurant.name) : (order.restaurant.nameEn ?? order.restaurant.name);
                       return Card(
                         margin: const EdgeInsets.only(bottom: 12),
                         child: ListTile(
                           title: Text(
-                            'Order #${order.id} - ${order.restaurant.name}',
+                            '${l?.orderLabel ?? "Order"} #${DataLocalizationHelper.formatNumber(context, order.id)} - $restName',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          subtitle: Text('Total: \$${order.totalAmount.toStringAsFixed(2)} | ${_formatDate(order.createdAt)}'),
+                          subtitle: Text('${l?.total ?? "Total"}: ${DataLocalizationHelper.formatCurrency(context, order.totalAmount)} | ${_formatDate(order.createdAt)}'),
                           trailing: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                             decoration: BoxDecoration(
@@ -855,7 +951,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              order.status.displayName,
+                              _localizedStatus(context, order.status),
                               style: TextStyle(color: _getStatusColor(order.status), fontWeight: FontWeight.bold),
                             ),
                           ),
@@ -892,6 +988,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   void _showOrderDetailsDialog(BuildContext context, OrderEntity order, List<Map<String, dynamic>> drivers) {
+    final l = AppLocalizations.of(context);
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final restName = isAr ? (order.restaurant.nameAr ?? order.restaurant.name) : (order.restaurant.nameEn ?? order.restaurant.name);
     showDialog(
       context: context,
       builder: (ctx) {
@@ -899,44 +998,44 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         return StatefulBuilder(
           builder: (context, setModalState) {
             return AlertDialog(
-              title: Text('Order #${order.id} Details'),
+              title: Text('${l?.orderLabel ?? "Order"} #${order.id}'),
               content: SizedBox(
                 width: 500,
                 child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Restaurant: ${order.restaurant.name}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text('${l?.restaurantLabel ?? "Restaurant"}: $restName', style: const TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
-                      Text('Customer Address: ${order.deliveryAddress}'),
+                      Text('${l?.customerAddress ?? "Customer Address"}: ${order.deliveryAddress}'),
                       if (order.notes != null) ...[
                         const SizedBox(height: 8),
-                        Text('Notes: ${order.notes}', style: const TextStyle(fontStyle: FontStyle.italic)),
+                        Text('${l?.notesLabel ?? "Notes"}: ${order.notes}', style: const TextStyle(fontStyle: FontStyle.italic)),
                       ],
                       const Divider(height: 24),
-                      const Text('Items:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      Text('${l?.itemsLabel ?? "Items"}:', style: const TextStyle(fontWeight: FontWeight.bold)),
                       ...order.items.map((item) => Padding(
                             padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Text('- ${item.productName} (x${item.quantity}) - \$${(item.unitPrice * item.quantity).toStringAsFixed(2)}'),
+                            child: Text('- ${item.productName} (x${DataLocalizationHelper.formatNumber(context, item.quantity)}) - ${DataLocalizationHelper.formatCurrency(context, item.unitPrice * item.quantity)}'),
                           )),
                       const Divider(height: 24),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Total Amount:', style: TextStyle(fontWeight: FontWeight.bold)),
-                          Text('\$${order.totalAmount.toStringAsFixed(2)}',
+                          const Text('', style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text('${l?.totalAmount ?? "Total"}: ${DataLocalizationHelper.formatCurrency(context, order.totalAmount)}',
                               style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 18)),
                         ],
                       ),
                       const Divider(height: 24),
-                      const Text('Change Status:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      Text('${l?.activeStatus ?? "Change Status"}:', style: const TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
                           ChoiceChip(
-                            label: Text(order.status.displayName),
+                            label: Text(_localizedStatus(context, order.status)),
                             selected: true,
                             onSelected: (_) {},
                             selectedColor: _getStatusColor(order.status).withAlpha(50),
@@ -963,7 +1062,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             ]
                           ].map((s) {
                             return ChoiceChip(
-                              label: Text(s.displayName),
+                              label: Text(_localizedStatus(context, s)),
                               selected: false,
                               onSelected: (selected) {
                                 if (selected) {
@@ -976,12 +1075,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         ],
                       ),
                       const Divider(height: 24),
-                      const Text('Assign Driver:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      Text('${l?.assignDriver ?? "Assign Driver"}:', style: const TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       DropdownButton<String>(
                         isExpanded: true,
                         value: selectedDriverId,
-                        hint: const Text('Select Driver'),
+                        hint: Text(l?.selectStatus ?? 'Select Driver'),
                         items: drivers.where((d) => !(d['is_blocked'] ?? false)).map((d) => DropdownMenuItem(
                               value: d['id'].toString(),
                               child: Text('${d['name']} (${d['status']})'),
@@ -1002,7 +1101,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 ),
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+                TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l?.close ?? 'Close')),
               ],
             );
           },
@@ -1015,6 +1114,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   // TAB 2: RESTAURANTS MANAGEMENT
   // -------------------------------------------------------------
   Widget _buildRestaurantsView(AdminLoaded state) {
+    final l = AppLocalizations.of(context);
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -1022,12 +1123,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Manage Restaurants', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(l?.manageRestaurants ?? 'Manage Restaurants', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               if (MediaQuery.of(context).size.width >= 800)
                 ElevatedButton.icon(
                   onPressed: () => _showRestaurantForm(context),
                   icon: const Icon(Icons.add, color: Colors.white),
-                  label: const Text('Add Restaurant', style: TextStyle(color: Colors.white)),
+                  label: Text(l?.addRestaurant ?? 'Add Restaurant', style: const TextStyle(color: Colors.white)),
                   style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
                 ),
             ],
@@ -1046,8 +1147,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     backgroundColor: AppColors.primary.withAlpha(30),
                     child: rest.imageUrl == null ? const Icon(Icons.restaurant, color: AppColors.primary) : null,
                   );
-                  final titleWidget = Text(rest.name, style: const TextStyle(fontWeight: FontWeight.bold));
-                  final subtitleWidget = Text('${rest.city} | Delivery Fee: \$${rest.deliveryFee.toStringAsFixed(2)}');
+                  final displayName = isAr ? (rest.nameAr ?? rest.name) : (rest.nameEn ?? rest.name);
+                  final displayCity = isAr ? (rest.cityAr ?? rest.city) : (rest.cityEn ?? rest.city);
+                  final titleWidget = Text(displayName, style: const TextStyle(fontWeight: FontWeight.bold));
+                  final subtitleWidget = Text('$displayCity | ${l?.deliveryFeeLabel ?? "Delivery Fee"}: ${DataLocalizationHelper.formatCurrency(context, rest.deliveryFee)}');
 
                   if (isMobile) {
                     return Padding(
@@ -1078,7 +1181,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             children: [
                               Row(
                                 children: [
-                                  const Text('Active', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                                  Text(l?.active ?? 'Active', style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
                                   const SizedBox(width: 8),
                                   SizedBox(
                                     height: 30,
@@ -1089,9 +1192,15 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                           id: rest.id,
                                           data: {
                                             'name': rest.name,
+                                            'name_en': rest.nameEn,
+                                            'name_ar': rest.nameAr,
                                             'slug': rest.slug,
                                             'city': rest.city,
+                                            'city_en': rest.cityEn,
+                                            'city_ar': rest.cityAr,
                                             'address': rest.address,
+                                            'address_en': rest.addressEn,
+                                            'address_ar': rest.addressAr,
                                             'phone': rest.phone,
                                             'delivery_fee': rest.deliveryFee,
                                             'image_url': rest.imageUrl,
@@ -1141,9 +1250,15 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                 id: rest.id,
                                 data: {
                                   'name': rest.name,
+                                  'name_en': rest.nameEn,
+                                  'name_ar': rest.nameAr,
                                   'slug': rest.slug,
                                   'city': rest.city,
+                                  'city_en': rest.cityEn,
+                                  'city_ar': rest.cityAr,
                                   'address': rest.address,
+                                  'address_en': rest.addressEn,
+                                  'address_ar': rest.addressAr,
                                   'phone': rest.phone,
                                   'delivery_fee': rest.deliveryFee,
                                   'image_url': rest.imageUrl,
@@ -1187,10 +1302,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   void _showRestaurantDetails(BuildContext context, RestaurantEntity rest) {
+    final l = AppLocalizations.of(context);
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final displayName = isAr ? (rest.nameAr ?? rest.name) : (rest.nameEn ?? rest.name);
+    final displayCity = isAr ? (rest.cityAr ?? rest.city) : (rest.cityEn ?? rest.city);
+    final displayAddress = isAr ? (rest.addressAr ?? rest.address) : (rest.addressEn ?? rest.address);
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(rest.name),
+        title: Text(displayName),
         content: SizedBox(
           width: 400,
           child: Column(
@@ -1203,30 +1324,37 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   child: Image.network(rest.imageUrl!, height: 180, width: double.infinity, fit: BoxFit.cover),
                 ),
               const SizedBox(height: 16),
-              Text('City: ${rest.city}', style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text('${l?.city ?? "City"}: $displayCity', style: const TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              Text('Address: ${rest.address}'),
+              Text('${l?.address ?? "Address"}: $displayAddress'),
               const SizedBox(height: 8),
-              Text('Phone: ${rest.phone}'),
+              Text('${l?.phoneLabel ?? "Phone"}: ${rest.phone}'),
               const SizedBox(height: 8),
-              Text('Delivery Fee: \$${rest.deliveryFee.toStringAsFixed(2)}'),
+              Text('${l?.deliveryFeeLabel ?? "Delivery Fee"}: ${DataLocalizationHelper.formatCurrency(context, rest.deliveryFee)}'),
               const SizedBox(height: 8),
-              Text('Status: ${rest.isActive ? "Active" : "Inactive"}', style: TextStyle(color: rest.isActive ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
+              Text(
+                '${l?.statusLabel ?? "Status"}: ${rest.isActive ? (l?.active ?? "Active") : (l?.inactiveStatus ?? "Inactive")}',
+                style: TextStyle(color: rest.isActive ? Colors.green : Colors.red, fontWeight: FontWeight.bold),
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l?.close ?? 'Close')),
         ],
       ),
     );
   }
 
   void _showRestaurantForm(BuildContext context, {RestaurantEntity? restaurant}) {
+    final l = AppLocalizations.of(context);
     final formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController(text: restaurant?.name ?? '');
-    final cityController = TextEditingController(text: restaurant?.city ?? '');
-    final addressController = TextEditingController(text: restaurant?.address ?? '');
+    final nameEnController = TextEditingController(text: restaurant?.nameEn ?? restaurant?.name ?? '');
+    final nameArController = TextEditingController(text: restaurant?.nameAr ?? '');
+    final cityEnController = TextEditingController(text: restaurant?.cityEn ?? restaurant?.city ?? '');
+    final cityArController = TextEditingController(text: restaurant?.cityAr ?? '');
+    final addressEnController = TextEditingController(text: restaurant?.addressEn ?? restaurant?.address ?? '');
+    final addressArController = TextEditingController(text: restaurant?.addressAr ?? '');
     final phoneController = TextEditingController(text: restaurant?.phone ?? '');
     final feeController = TextEditingController(text: restaurant?.deliveryFee.toString() ?? '');
     String? imageUrl = restaurant?.imageUrl;
@@ -1245,7 +1373,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         return StatefulBuilder(
           builder: (context, setStateBuilder) {
             return AlertDialog(
-              title: Text(restaurant == null ? 'Add Restaurant' : 'Edit Restaurant'),
+              title: Text(restaurant == null ? (l?.addRestaurant ?? 'Add Restaurant') : (l?.editProfileDetails ?? 'Edit Restaurant')),
               content: Form(
                 key: formKey,
                 child: SingleChildScrollView(
@@ -1253,36 +1381,48 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       TextFormField(
-                        controller: nameController,
-                        decoration: const InputDecoration(labelText: 'Name'),
-                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                        controller: nameEnController,
+                        decoration: InputDecoration(labelText: '${l?.name ?? "Name"} (English)'),
+                        validator: (v) => v == null || v.isEmpty ? (l?.requiredField ?? 'Required') : null,
                       ),
                       TextFormField(
-                        controller: cityController,
-                        decoration: const InputDecoration(labelText: 'City'),
-                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                        controller: nameArController,
+                        decoration: InputDecoration(labelText: '${l?.name ?? "Name"} (Arabic)'),
                       ),
                       TextFormField(
-                        controller: addressController,
-                        decoration: const InputDecoration(labelText: 'Address'),
-                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                        controller: cityEnController,
+                        decoration: InputDecoration(labelText: '${l?.city ?? "City"} (English)'),
+                        validator: (v) => v == null || v.isEmpty ? (l?.requiredField ?? 'Required') : null,
+                      ),
+                      TextFormField(
+                        controller: cityArController,
+                        decoration: InputDecoration(labelText: '${l?.city ?? "City"} (Arabic)'),
+                      ),
+                      TextFormField(
+                        controller: addressEnController,
+                        decoration: InputDecoration(labelText: '${l?.address ?? "Address"} (English)'),
+                        validator: (v) => v == null || v.isEmpty ? (l?.requiredField ?? 'Required') : null,
+                      ),
+                      TextFormField(
+                        controller: addressArController,
+                        decoration: InputDecoration(labelText: '${l?.address ?? "Address"} (Arabic)'),
                       ),
                       TextFormField(
                         controller: phoneController,
-                        decoration: const InputDecoration(labelText: 'Phone'),
-                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                        decoration: InputDecoration(labelText: l?.phoneLabel ?? 'Phone'),
+                        validator: (v) => v == null || v.isEmpty ? (l?.requiredField ?? 'Required') : null,
                       ),
                       TextFormField(
                         controller: feeController,
-                        decoration: const InputDecoration(labelText: 'Delivery Fee'),
+                        decoration: InputDecoration(labelText: l?.deliveryFeeLabel ?? 'Delivery Fee'),
                         keyboardType: TextInputType.number,
                         validator: (v) => double.tryParse(v ?? '') == null ? 'Must be a valid number' : null,
                       ),
                       const SizedBox(height: 16),
                       // Custom image upload dialog mockup
-                      const Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text('Restaurant Image', style: TextStyle(fontWeight: FontWeight.bold)),
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Text(l?.restaurantImage ?? 'Restaurant Image', style: const TextStyle(fontWeight: FontWeight.bold)),
                       ),
                       const SizedBox(height: 8),
                       imageUrl != null
@@ -1298,7 +1438,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                               height: 120,
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color: Colors.grey[200],
+                                color: Theme.of(context).colorScheme.onSurface.withAlpha(20),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Icon(Icons.image_search, size: 40),
@@ -1310,13 +1450,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           });
                         },
                         icon: const Icon(Icons.upload),
-                        label: const Text('Simulate Image Upload'),
+                        label: Text(l?.simulateImageUpload ?? 'Simulate Image Upload'),
                       ),
                       const SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Active Status'),
+                          Text(l?.accountStatusLabel ?? 'Active Status'),
                           Switch(
                             value: isActive,
                             onChanged: (val) => setStateBuilder(() => isActive = val),
@@ -1330,20 +1470,20 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+                  child: Text(l?.cancel ?? 'Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(150))),
                 ),
                 TextButton(
                   onPressed: () {
                     if (formKey.currentState!.validate()) {
                       final data = {
-                        'name': nameController.text,
-                        'city': cityController.text,
-                        'address': addressController.text,
+                        'name': {'en': nameEnController.text, 'ar': nameArController.text},
+                        'city': {'en': cityEnController.text, 'ar': cityArController.text},
+                        'address': {'en': addressEnController.text, 'ar': addressArController.text},
                         'phone': phoneController.text,
                         'delivery_fee': double.parse(feeController.text),
                         'image_url': imageUrl,
                         'is_active': isActive,
-                        'slug': nameController.text.toLowerCase().replaceAll(' ', '-'),
+                        'slug': nameEnController.text.toLowerCase().replaceAll(' ', '-'),
                       };
                       if (restaurant == null) {
                         _adminBloc.add(CreateRestaurantEvent(data));
@@ -1353,7 +1493,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       Navigator.pop(ctx);
                     }
                   },
-                  child: const Text('Save'),
+                  child: Text(l?.save ?? 'Save'),
                 ),
               ],
             );
@@ -1364,6 +1504,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   void _showImageSelector(BuildContext context, List<Map<String, String>> presets, Function(String) onSelect) {
+    final l = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (ctx) {
@@ -1374,7 +1515,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         return StatefulBuilder(
           builder: (context, setModalState) {
             return AlertDialog(
-              title: const Text('Select / Upload Image'),
+              title: Text(l?.selectUploadImage ?? 'Select / Upload Image'),
               content: SizedBox(
                 width: 400,
                 child: SingleChildScrollView(
@@ -1382,12 +1523,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (uploading) ...[
-                        const Text('Uploading File...'),
+                        Text(l?.uploadingFile ?? 'Uploading File...'),
                         const SizedBox(height: 12),
                         LinearProgressIndicator(value: progress),
                         const SizedBox(height: 16),
                       ] else ...[
-                        const Text('Choose from Premium Presets:'),
+                        Text(l?.chooseFromPremiumPresets ?? 'Choose from Premium Presets:'),
                         const SizedBox(height: 12),
                         SizedBox(
                           height: 160,
@@ -1427,7 +1568,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           ),
                         ),
                         const Divider(height: 24),
-                        const Text('Or Enter Custom Image URL:'),
+                        Text(l?.orEnterCustomImageUrl ?? 'Or Enter Custom Image URL:'),
                         const SizedBox(height: 8),
                         TextField(
                           controller: customUrlController,
@@ -1441,7 +1582,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                               Navigator.pop(ctx);
                             }
                           },
-                          child: const Text('Apply URL'),
+                          child: Text(l?.applyUrl ?? 'Apply URL'),
                         ),
                         const Divider(height: 24),
                         ElevatedButton.icon(
@@ -1465,7 +1606,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             }
                           },
                           icon: const Icon(Icons.file_upload),
-                          label: const Text('Mock Local File Upload'),
+                          label: Text(l?.mockLocalFileUpload ?? 'Mock Local File Upload'),
                         ),
                       ],
                     ],
@@ -1473,7 +1614,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 ),
               ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+                TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l?.close ?? 'Close')),
               ],
             );
           },
@@ -1483,22 +1624,23 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   void _showDeleteConfirmation(BuildContext context, VoidCallback onConfirm) {
+    final l = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Delete'),
-        content: const Text('Are you sure you want to delete this entity? This action is destructive and cannot be undone.'),
+        title: Text(l?.confirmDelete ?? 'Confirm Delete'),
+        content: Text(l?.areYouSureYouWantToDeleteThisEntityThisActionIsDestructiveAndCannotBeUndone ?? 'Are you sure you want to delete this entity? This action is destructive and cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: Text(l?.cancel ?? 'Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(150))),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
               onConfirm();
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text(l?.delete ?? 'Delete', style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -1509,6 +1651,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   // TAB 3: MEALS MANAGEMENT
   // -------------------------------------------------------------
   Widget _buildMealsView(AdminLoaded state) {
+    final l = AppLocalizations.of(context);
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -1516,12 +1660,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Manage Meals', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(l?.manageMeals ?? 'Manage Meals', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               if (MediaQuery.of(context).size.width >= 800)
                 ElevatedButton.icon(
                   onPressed: () => _showMealForm(context, state.restaurants, state.categories),
                   icon: const Icon(Icons.add, color: Colors.white),
-                  label: const Text('Add Meal', style: TextStyle(color: Colors.white)),
+                  label: Text(l?.addMeal ?? 'Add Meal', style: const TextStyle(color: Colors.white)),
                   style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
                 ),
             ],
@@ -1536,7 +1680,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   (r) => r?.id == meal.restaurantId,
                   orElse: () => null,
                 );
-                final restName = matchedRestaurant?.name ?? 'Unknown';
                 final isMobile = MediaQuery.of(context).size.width < 600;
 
                 Widget buildCardContent() {
@@ -1545,8 +1688,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     backgroundColor: AppColors.primary.withAlpha(30),
                     child: meal.imageUrl == null ? const Icon(Icons.fastfood, color: AppColors.primary) : null,
                   );
-                  final titleWidget = Text(meal.name, style: const TextStyle(fontWeight: FontWeight.bold));
-                  final subtitleWidget = Text('Price: \$${meal.price.toStringAsFixed(2)} | Category: ${meal.category} | Rest: $restName');
+                  final displayName = isAr ? (meal.nameAr ?? meal.name) : (meal.nameEn ?? meal.name);
+                  final displayRestName = matchedRestaurant != null
+                      ? (isAr ? (matchedRestaurant.nameAr ?? matchedRestaurant.name) : (matchedRestaurant.nameEn ?? matchedRestaurant.name))
+                      : 'Unknown';
+                  final titleWidget = Text(displayName, style: const TextStyle(fontWeight: FontWeight.bold));
+                  final subtitleWidget = Text('${l?.priceLabel ?? "Price"}: ${DataLocalizationHelper.formatCurrency(context, meal.price)} | ${l?.categoryLabel ?? "Category"}: ${meal.category} | ${l?.restaurantLabel2 ?? "Rest"}: $displayRestName');
 
                   if (isMobile) {
                     return Padding(
@@ -1577,7 +1724,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             children: [
                               Row(
                                 children: [
-                                  const Text('Available', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                                  Text(l?.available ?? 'Available', style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
                                   const SizedBox(width: 8),
                                   SizedBox(
                                     height: 30,
@@ -1606,7 +1753,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                 children: [
                                   IconButton(
                                     icon: const Icon(Icons.info_outline, color: Colors.teal),
-                                    onPressed: () => _showMealDetails(context, meal, restName),
+                                    onPressed: () => _showMealDetails(context, meal, displayRestName),
                                   ),
                                   IconButton(
                                     icon: const Icon(Icons.edit, color: Colors.blue),
@@ -1653,7 +1800,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.info_outline, color: Colors.teal),
-                            onPressed: () => _showMealDetails(context, meal, restName),
+                            onPressed: () => _showMealDetails(context, meal, displayRestName),
                           ),
                           IconButton(
                             icon: const Icon(Icons.edit, color: Colors.blue),
@@ -1686,10 +1833,15 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   void _showMealDetails(BuildContext context, MealEntity meal, String restName) {
+    final l = AppLocalizations.of(context);
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
+    final displayName = isAr ? (meal.nameAr ?? meal.name) : (meal.nameEn ?? meal.name);
+    final displayDesc = isAr ? (meal.descriptionAr ?? meal.description) : (meal.descriptionEn ?? meal.description);
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(meal.name),
+        title: Text(displayName),
         content: SizedBox(
           width: 400,
           child: Column(
@@ -1702,29 +1854,33 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   child: Image.network(meal.imageUrl!, height: 180, width: double.infinity, fit: BoxFit.cover),
                 ),
               const SizedBox(height: 16),
-              Text('Price: \$${meal.price.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.primary)),
+              Text('${l?.priceLabel ?? "Price"}: ${DataLocalizationHelper.formatCurrency(context, meal.price)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.primary)),
               const SizedBox(height: 8),
-              Text('Category: ${meal.category}'),
+              Text('${l?.categoryLabel ?? "Category"}: ${meal.category}'),
               const SizedBox(height: 8),
-              Text('Restaurant: $restName'),
+              Text('${l?.restaurantLabel2 ?? "Restaurant"}: $restName'),
               const SizedBox(height: 8),
-              Text('Description: ${meal.description}'),
+              Text('${l?.notesLabel ?? "Description"}: $displayDesc'),
               const SizedBox(height: 8),
-              Text('Available: ${meal.isAvailable ? "Yes" : "No"}', style: TextStyle(color: meal.isAvailable ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
+              Text('${l?.available ?? "Available"}: ${meal.isAvailable ? (l?.yesLabel ?? "Yes") : (l?.noLabel ?? "No")}', style: TextStyle(color: meal.isAvailable ? Colors.green : Colors.red, fontWeight: FontWeight.bold)),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l?.close ?? 'Close')),
         ],
       ),
     );
   }
 
   void _showMealForm(BuildContext context, List<RestaurantEntity> restaurants, List<CategoryEntity> categories, {MealEntity? meal}) {
+    final l = AppLocalizations.of(context);
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     final formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController(text: meal?.name ?? '');
-    final descriptionController = TextEditingController(text: meal?.description ?? '');
+    final nameEnController = TextEditingController(text: meal?.nameEn ?? meal?.name ?? '');
+    final nameArController = TextEditingController(text: meal?.nameAr ?? '');
+    final descriptionEnController = TextEditingController(text: meal?.descriptionEn ?? meal?.description ?? '');
+    final descriptionArController = TextEditingController(text: meal?.descriptionAr ?? '');
     final priceController = TextEditingController(text: meal?.price.toString() ?? '');
     String? selectedCategoryName = meal?.category ?? (categories.isNotEmpty ? categories.first.name : null);
     int? selectedRestaurantId = meal?.restaurantId ?? (restaurants.isNotEmpty ? restaurants.first.id : null);
@@ -1744,7 +1900,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         return StatefulBuilder(
           builder: (context, setStateBuilder) {
             return AlertDialog(
-              title: Text(meal == null ? 'Add Meal' : 'Edit Meal'),
+              title: Text(meal == null ? (l?.addMeal ?? 'Add Meal') : (l?.mealDetails ?? 'Edit Meal')),
               content: Form(
                 key: formKey,
                 child: SingleChildScrollView(
@@ -1752,45 +1908,56 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       DropdownButtonFormField<int>(
-                        decoration: const InputDecoration(labelText: 'Restaurant'),
+                        decoration: InputDecoration(labelText: l?.restaurantLabel ?? 'Restaurant'),
                         initialValue: selectedRestaurantId,
-                        items: restaurants.map((r) => DropdownMenuItem(
-                              value: r.id,
-                              child: Text(r.name),
-                            )).toList(),
+                        items: restaurants.map((r) {
+                          final rName = isAr ? (r.nameAr ?? r.name) : (r.nameEn ?? r.name);
+                          return DropdownMenuItem(
+                            value: r.id,
+                            child: Text(rName),
+                          );
+                        }).toList(),
                         onChanged: (val) => selectedRestaurantId = val,
-                        validator: (v) => v == null ? 'Required' : null,
+                        validator: (v) => v == null ? (l?.requiredField ?? 'Required') : null,
                       ),
                       TextFormField(
-                        controller: nameController,
-                        decoration: const InputDecoration(labelText: 'Name'),
-                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                        controller: nameEnController,
+                        decoration: InputDecoration(labelText: '${l?.name ?? "Name"} (English)'),
+                        validator: (v) => v == null || v.isEmpty ? (l?.requiredField ?? 'Required') : null,
                       ),
                       TextFormField(
-                        controller: descriptionController,
-                        decoration: const InputDecoration(labelText: 'Description'),
-                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                        controller: nameArController,
+                        decoration: InputDecoration(labelText: '${l?.name ?? "Name"} (Arabic)'),
+                      ),
+                      TextFormField(
+                        controller: descriptionEnController,
+                        decoration: InputDecoration(labelText: '${l?.notesLabel ?? "Description"} (English)'),
+                        validator: (v) => v == null || v.isEmpty ? (l?.requiredField ?? 'Required') : null,
+                      ),
+                      TextFormField(
+                        controller: descriptionArController,
+                        decoration: InputDecoration(labelText: '${l?.notesLabel ?? "Description"} (Arabic)'),
                       ),
                       TextFormField(
                         controller: priceController,
-                        decoration: const InputDecoration(labelText: 'Price'),
+                        decoration: InputDecoration(labelText: l?.priceLabel ?? 'Price'),
                         keyboardType: TextInputType.number,
                         validator: (v) => double.tryParse(v ?? '') == null ? 'Must be a valid number' : null,
                       ),
                       DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(labelText: 'Category'),
+                        decoration: InputDecoration(labelText: l?.categoryLabel ?? 'Category'),
                         initialValue: selectedCategoryName,
                         items: categories.map((c) => DropdownMenuItem(
                               value: c.name,
                               child: Text(c.name),
                             )).toList(),
                         onChanged: (val) => selectedCategoryName = val,
-                        validator: (v) => v == null ? 'Required' : null,
+                        validator: (v) => v == null ? (l?.requiredField ?? 'Required') : null,
                       ),
                       const SizedBox(height: 16),
-                      const Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text('Meal Image', style: TextStyle(fontWeight: FontWeight.bold)),
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Text(l?.mealImage ?? 'Meal Image', style: const TextStyle(fontWeight: FontWeight.bold)),
                       ),
                       const SizedBox(height: 8),
                       imageUrl != null
@@ -1806,7 +1973,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                               height: 120,
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color: Colors.grey[200],
+                                color: Theme.of(context).colorScheme.onSurface.withAlpha(20),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Icon(Icons.image, size: 40),
@@ -1818,13 +1985,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           });
                         },
                         icon: const Icon(Icons.upload_file),
-                        label: const Text('Simulate Image Upload'),
+                        label: Text(l?.simulateImageUpload ?? 'Simulate Image Upload'),
                       ),
                       const SizedBox(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Available Status'),
+                          Text(l?.availableStatus ?? 'Available Status'),
                           Switch(
                             value: isAvailable,
                             onChanged: (val) => setStateBuilder(() => isAvailable = val),
@@ -1838,20 +2005,20 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+                  child: Text(l?.cancel ?? 'Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(150))),
                 ),
                 TextButton(
                   onPressed: () {
                     if (formKey.currentState!.validate()) {
                       final data = {
                         'restaurant_id': selectedRestaurantId,
-                        'name': nameController.text,
-                        'description': descriptionController.text,
+                        'name': {'en': nameEnController.text, 'ar': nameArController.text},
+                        'description': {'en': descriptionEnController.text, 'ar': descriptionArController.text},
                         'price': double.parse(priceController.text),
                         'category': selectedCategoryName,
                         'image_url': imageUrl,
                         'is_available': isAvailable,
-                        'slug': nameController.text.toLowerCase().replaceAll(' ', '-'),
+                        'slug': nameEnController.text.toLowerCase().replaceAll(' ', '-'),
                       };
                       if (meal == null) {
                         _adminBloc.add(CreateMealEvent(data));
@@ -1861,7 +2028,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       Navigator.pop(ctx);
                     }
                   },
-                  child: const Text('Save'),
+                  child: Text(l?.save ?? 'Save'),
                 ),
               ],
             );
@@ -1875,6 +2042,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   // TAB 4: CATEGORY MANAGEMENT
   // -------------------------------------------------------------
   Widget _buildCategoriesView(AdminLoaded state) {
+    final l = AppLocalizations.of(context);
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -1882,12 +2051,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Manage Categories', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(l?.manageCategories ?? 'Manage Categories', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               if (MediaQuery.of(context).size.width >= 800)
                 ElevatedButton.icon(
                   onPressed: () => _showCategoryForm(context, state.restaurants),
                   icon: const Icon(Icons.add, color: Colors.white),
-                  label: const Text('Add Category', style: TextStyle(color: Colors.white)),
+                  label: Text(l?.addCategory ?? 'Add Category', style: const TextStyle(color: Colors.white)),
                   style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
                 ),
             ],
@@ -1906,8 +2075,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     backgroundColor: AppColors.primary.withAlpha(30),
                     child: cat.imageUrl == null ? const Icon(Icons.category_rounded, color: AppColors.primary) : null,
                   );
-                  final titleWidget = Text(cat.name, style: const TextStyle(fontWeight: FontWeight.bold));
-                  final subtitleWidget = Text('Visibility: ${cat.isVisible ? "Visible" : "Hidden"} | Assigned Restaurants: ${cat.restaurantIds.length}');
+                  final displayName = isAr ? (cat.nameAr ?? cat.name) : (cat.nameEn ?? cat.name);
+                  final titleWidget = Text(displayName, style: const TextStyle(fontWeight: FontWeight.bold));
+                  final subtitleWidget = Text('${l?.visibilityLabel ?? "Visibility"}: ${cat.isVisible ? (l?.visibleStatus ?? "Visible") : (l?.hiddenStatus ?? "Hidden")} | ${l?.assignedRestaurantsLabel ?? "Assigned Restaurants"}: ${cat.restaurantIds.length}');
 
                   if (isMobile) {
                     return Padding(
@@ -1938,7 +2108,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             children: [
                               Row(
                                 children: [
-                                  const Text('Visible', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                                  Text(l?.visible ?? 'Visible', style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
                                   const SizedBox(width: 8),
                                   SizedBox(
                                     height: 30,
@@ -2031,8 +2201,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   void _showCategoryForm(BuildContext context, List<RestaurantEntity> restaurants, {CategoryEntity? category}) {
+    final l = AppLocalizations.of(context);
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     final formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController(text: category?.name ?? '');
+    final nameEnController = TextEditingController(text: category?.nameEn ?? category?.name ?? '');
+    final nameArController = TextEditingController(text: category?.nameAr ?? '');
     String? imageUrl = category?.imageUrl;
     bool isVisible = category?.isVisible ?? true;
     List<int> selectedRestaurantIds = List<int>.from(category?.restaurantIds ?? []);
@@ -2050,7 +2223,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         return StatefulBuilder(
           builder: (context, setStateBuilder) {
             return AlertDialog(
-              title: Text(category == null ? 'Add Category' : 'Edit Category'),
+              title: Text(category == null ? (l?.addCategory ?? 'Add Category') : (l?.category ?? 'Edit Category')),
               content: SizedBox(
                 width: 500,
                 child: Form(
@@ -2060,14 +2233,18 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         TextFormField(
-                          controller: nameController,
-                          decoration: const InputDecoration(labelText: 'Name'),
-                          validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                          controller: nameEnController,
+                          decoration: InputDecoration(labelText: '${l?.name ?? "Name"} (English)'),
+                          validator: (v) => v == null || v.isEmpty ? (l?.requiredField ?? 'Required') : null,
+                        ),
+                        TextFormField(
+                          controller: nameArController,
+                          decoration: InputDecoration(labelText: '${l?.name ?? "Name"} (Arabic)'),
                         ),
                         const SizedBox(height: 16),
-                        const Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text('Category Image', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: Text(l?.categoryImage ?? 'Category Image', style: const TextStyle(fontWeight: FontWeight.bold)),
                         ),
                         const SizedBox(height: 8),
                         imageUrl != null
@@ -2083,7 +2260,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                 height: 120,
                                 width: double.infinity,
                                 decoration: BoxDecoration(
-                                  color: Colors.grey[200],
+                                  color: Theme.of(context).colorScheme.onSurface.withAlpha(20),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Icon(Icons.category, size: 40),
@@ -2095,13 +2272,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             });
                           },
                           icon: const Icon(Icons.photo),
-                          label: const Text('Select Photo'),
+                          label: Text(l?.selectPhoto ?? 'Select Photo'),
                         ),
                         const SizedBox(height: 16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Visible on App Home'),
+                            Text(l?.visibleOnAppHome ?? 'Visible on App Home'),
                             Switch(
                               value: isVisible,
                               onChanged: (val) => setStateBuilder(() => isVisible = val),
@@ -2109,13 +2286,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           ],
                         ),
                         const Divider(height: 24),
-                        const Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text('Assign Restaurants to Category', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: Text(l?.assignRestaurantsToCategory ?? 'Assign Restaurants to Category', style: const TextStyle(fontWeight: FontWeight.bold)),
                         ),
                         const SizedBox(height: 8),
                         restaurants.isEmpty
-                            ? const Text('No restaurants registered to assign.')
+                            ? Text(l?.noRestaurantsRegisteredToAssign ?? 'No restaurants registered to assign.')
                             : ListView.builder(
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
@@ -2123,8 +2300,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                 itemBuilder: (context, index) {
                                   final r = restaurants[index];
                                   final checked = selectedRestaurantIds.contains(r.id);
+                                  final rName = isAr ? (r.nameAr ?? r.name) : (r.nameEn ?? r.name);
                                   return CheckboxListTile(
-                                    title: Text(r.name),
+                                    title: Text(rName),
                                     value: checked,
                                     onChanged: (val) {
                                       setStateBuilder(() {
@@ -2146,13 +2324,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+                  child: Text(l?.cancel ?? 'Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(150))),
                 ),
                 TextButton(
                   onPressed: () {
                     if (formKey.currentState!.validate()) {
                       final data = {
-                        'name': nameController.text,
+                        'name': {'en': nameEnController.text, 'ar': nameArController.text},
                         'image_url': imageUrl,
                         'is_visible': isVisible,
                         'restaurant_ids': selectedRestaurantIds,
@@ -2165,7 +2343,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       Navigator.pop(ctx);
                     }
                   },
-                  child: const Text('Save'),
+                  child: Text(l?.save ?? 'Save'),
                 ),
               ],
             );
@@ -2182,6 +2360,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   String _userStatusFilter = 'All';
 
   Widget _buildUsersView(AdminLoaded state) {
+    final l = AppLocalizations.of(context);
     final filteredUsers = state.users.where((u) {
       final matchesSearch = u.name.toLowerCase().contains(_userSearchQuery.toLowerCase()) ||
           u.email.toLowerCase().contains(_userSearchQuery.toLowerCase()) ||
@@ -2190,18 +2369,18 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           (u.isAdmin ? 'admin' : '').contains(_userSearchQuery.toLowerCase());
 
       bool matchesRole = true;
-      if (_userRoleFilter == 'Admins') {
+      if (_userRoleFilter == 'Admins' || _userRoleFilter == 'المسؤولين') {
         matchesRole = u.isAdmin || u.role == 'admin';
-      } else if (_userRoleFilter == 'Customers') {
+      } else if (_userRoleFilter == 'Customers' || _userRoleFilter == 'العملاء') {
         matchesRole = !u.isAdmin && u.role == 'customer';
-      } else if (_userRoleFilter == 'Drivers') {
+      } else if (_userRoleFilter == 'Drivers' || _userRoleFilter == 'السائقين') {
         matchesRole = u.role == 'delivery';
       }
 
       bool matchesStatus = true;
-      if (_userStatusFilter == 'Active') {
+      if (_userStatusFilter == 'Active' || _userStatusFilter == 'نشط') {
         matchesStatus = !u.isBlocked;
-      } else if (_userStatusFilter == 'Inactive') {
+      } else if (_userStatusFilter == 'Inactive' || _userStatusFilter == 'غير نشط') {
         matchesStatus = u.isBlocked;
       }
 
@@ -2216,12 +2395,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Users Management', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(l?.usersManagement ?? 'Users Management', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               if (MediaQuery.of(context).size.width >= 800)
                 ElevatedButton.icon(
                   onPressed: () => _showUserForm(context),
                   icon: const Icon(Icons.person_add_rounded, color: Colors.white),
-                  label: const Text('Add User', style: TextStyle(color: Colors.white)),
+                  label: Text(l?.addUser ?? 'Add User', style: const TextStyle(color: Colors.white)),
                   style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
                 ),
             ],
@@ -2233,10 +2412,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 flex: 2,
                 child: TextField(
                   decoration: InputDecoration(
-                    hintText: 'Search users by name, email, phone, or role...',
+                    hintText: l?.searchUsers2 ?? 'Search users by name, email, phone, or role...',
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.surface,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -2247,26 +2426,57 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               ),
               const SizedBox(width: 16),
               DropdownButton<String>(
-                value: _userRoleFilter,
-                hint: const Text('Filter Role'),
-                items: ['All', 'Admins', 'Customers', 'Drivers'].map((r) => DropdownMenuItem(
+                value: _userRoleFilter == 'All' ? (l?.allFilter ?? 'All') : _userRoleFilter,
+                hint: Text(l?.filterRole ?? 'Filter Role'),
+                items: [
+                  l?.allFilter ?? 'All',
+                  l?.admin ?? 'Admin',
+                  l?.customer ?? 'Customer',
+                  l?.driver ?? 'Driver'
+                ].map((r) => DropdownMenuItem(
                   value: r,
                   child: Text(r),
                 )).toList(),
                 onChanged: (v) {
-                  if (v != null) setState(() => _userRoleFilter = v);
+                  if (v != null) {
+                    setState(() {
+                      if (v == (l?.allFilter ?? 'All')) {
+                        _userRoleFilter = 'All';
+                      } else if (v == (l?.admin ?? 'Admin')) {
+                        _userRoleFilter = 'Admins';
+                      } else if (v == (l?.customer ?? 'Customer')) {
+                        _userRoleFilter = 'Customers';
+                      } else if (v == (l?.driver ?? 'Driver')) {
+                        _userRoleFilter = 'Drivers';
+                      }
+                    });
+                  }
                 },
               ),
               const SizedBox(width: 16),
               DropdownButton<String>(
-                value: _userStatusFilter,
-                hint: const Text('Filter Status'),
-                items: ['All', 'Active', 'Inactive'].map((s) => DropdownMenuItem(
+                value: _userStatusFilter == 'All' ? (l?.allFilter ?? 'All') : _userStatusFilter,
+                hint: Text(l?.statusLabel ?? 'Filter Status'),
+                items: [
+                  l?.allFilter ?? 'All',
+                  l?.active ?? 'Active',
+                  l?.inactiveStatus ?? 'Inactive'
+                ].map((s) => DropdownMenuItem(
                   value: s,
                   child: Text(s),
                 )).toList(),
                 onChanged: (v) {
-                  if (v != null) setState(() => _userStatusFilter = v);
+                  if (v != null) {
+                    setState(() {
+                      if (v == (l?.allFilter ?? 'All')) {
+                        _userStatusFilter = 'All';
+                      } else if (v == (l?.active ?? 'Active')) {
+                        _userStatusFilter = 'Active';
+                      } else if (v == (l?.inactiveStatus ?? 'Inactive')) {
+                        _userStatusFilter = 'Inactive';
+                      }
+                    });
+                  }
                 },
               ),
             ],
@@ -2274,7 +2484,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           const SizedBox(height: 24),
           Expanded(
             child: filteredUsers.isEmpty
-                ? const Center(child: Text('No users matching the filters.'))
+                ? Center(child: Text(l?.noUsersMatchingTheFilters ?? 'No users matching the filters.'))
                 : ListView.builder(
                     itemCount: filteredUsers.length,
                     itemBuilder: (context, index) {
@@ -2312,18 +2522,18 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                   color: Colors.redAccent,
                                   borderRadius: BorderRadius.all(Radius.circular(8)),
                                 ),
-                                child: const Text(
-                                  'Deactivated',
-                                  style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                child: Text(
+                                  l?.deactivated ?? 'Deactivated',
+                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ],
                           ],
                         );
 
-                        final roleDisplay = isDriver ? 'Driver' : (user.isAdmin ? 'Admin' : 'Customer');
+                        final roleDisplay = isDriver ? (l?.driver ?? 'Driver') : (user.isAdmin ? (l?.admin ?? 'Admin') : (l?.customer ?? 'Customer'));
                         final subtitleWidget = Text(
-                          '${user.email} | Phone: ${user.phone ?? 'N/A'} | Role: $roleDisplay',
+                          '${user.email} | ${l?.phoneLabel ?? "Phone"}: ${user.phone ?? l?.naLabel ?? "N/A"} | ${l?.roleLabel ?? "Role"}: $roleDisplay',
                         );
 
                         if (isMobile) {
@@ -2356,7 +2566,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                     if (!isSelf)
                                       Row(
                                         children: [
-                                          Text(user.isBlocked ? 'Activate' : 'Deactivate', style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                                          Text(user.isBlocked ? (l?.activateUser ?? 'Activate') : (l?.deactivateUser ?? 'Deactivate'), style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
                                           const SizedBox(width: 8),
                                           SizedBox(
                                             height: 30,
@@ -2378,7 +2588,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                         ],
                                       )
                                     else
-                                      const Text('(You)', style: TextStyle(color: AppColors.textSecondary, fontStyle: FontStyle.italic)),
+                                      Text(l?.you ?? '(You)', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(150), fontStyle: FontStyle.italic)),
                                     Row(
                                       children: [
                                         IconButton(
@@ -2442,9 +2652,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                     }),
                                   ),
                                 ] else
-                                  const Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: 16),
-                                    child: Text('(You)', style: TextStyle(color: AppColors.textSecondary, fontStyle: FontStyle.italic)),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    child: Text(l?.you ?? '(You)', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(150), fontStyle: FontStyle.italic)),
                                   ),
                               ],
                             ),
@@ -2467,48 +2677,53 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   void _showUserDetails(BuildContext context, UserEntity user) {
+    final l = AppLocalizations.of(context);
     final isDriver = user.role == 'delivery';
-    final roleDisplay = isDriver ? 'Driver' : (user.isAdmin ? 'Admin' : 'Customer');
+    final roleDisplay = isDriver ? (l?.driver ?? 'Driver') : (user.isAdmin ? (l?.admin ?? 'Admin') : (l?.customer ?? 'Customer'));
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('User Profile Details'),
+        title: Text(l?.userProfileDetails ?? 'User Profile Details'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Name: ${user.name}', style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text('${l?.name ?? "Name"}: ${user.name}', style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Text('Email: ${user.email}'),
+            Text('${l?.email ?? "Email"}: ${user.email}'),
             const SizedBox(height: 8),
-            Text('Phone: ${user.phone ?? 'N/A'}'),
+            Text('${l?.phoneLabel ?? "Phone"}: ${user.phone ?? l?.naLabel ?? "N/A"}'),
             const SizedBox(height: 8),
-            Text('Role: $roleDisplay'),
+            Text('${l?.roleLabel ?? "Role"}: $roleDisplay'),
             const SizedBox(height: 8),
-            Text('Account Status: ${user.isBlocked ? "Deactivated" : "Active"}', style: TextStyle(color: user.isBlocked ? Colors.red : Colors.green, fontWeight: FontWeight.bold)),
+            Text(
+              '${l?.accountStatusLabel ?? "Account Status"}: ${user.isBlocked ? (l?.deactivated ?? "Deactivated") : (l?.active ?? "Active")}',
+              style: TextStyle(color: user.isBlocked ? Colors.red : Colors.green, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l?.close ?? 'Close')),
         ],
       ),
     );
   }
 
   void _showBlockConfirmation(BuildContext context, String name, bool block, VoidCallback onConfirm) {
+    final l = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(block ? 'Deactivate User' : 'Activate User'),
-        content: Text('Are you sure you want to ${block ? "deactivate" : "activate"} user "$name"?'),
+        title: Text(block ? (l?.deactivateUser ?? 'Deactivate User') : (l?.activateUser ?? 'Activate User')),
+        content: Text(block ? 'Are you sure you want to deactivate user "$name"?' : 'Are you sure you want to activate user "$name"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l?.cancel ?? 'Cancel')),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
               onConfirm();
             },
-            child: Text(block ? 'Deactivate' : 'Activate', style: TextStyle(color: block ? Colors.red : Colors.green)),
+            child: Text(block ? (l?.deactivateUser ?? 'Deactivate') : (l?.activateUser ?? 'Activate'), style: TextStyle(color: block ? Colors.red : Colors.green)),
           )
         ],
       ),
@@ -2516,6 +2731,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   void _showUserForm(BuildContext context, {UserEntity? user}) {
+    final l = AppLocalizations.of(context);
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: user?.name ?? '');
     final emailController = TextEditingController(text: user?.email ?? '');
@@ -2529,7 +2745,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         return StatefulBuilder(
           builder: (context, setStateBuilder) {
             return AlertDialog(
-              title: Text(user == null ? 'Add User' : 'Edit User Details'),
+              title: Text(user == null ? (l?.addUser ?? 'Add User') : (l?.userProfileDetails ?? 'Edit User Details')),
               content: Form(
                 key: formKey,
                 child: SingleChildScrollView(
@@ -2538,33 +2754,33 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     children: [
                       TextFormField(
                         controller: nameController,
-                        decoration: const InputDecoration(labelText: 'Name'),
-                        validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                        decoration: InputDecoration(labelText: l?.name ?? 'Name'),
+                        validator: (v) => v == null || v.isEmpty ? (l?.requiredField ?? 'Required') : null,
                       ),
                       TextFormField(
                         controller: emailController,
-                        decoration: const InputDecoration(labelText: 'Email'),
+                        decoration: InputDecoration(labelText: l?.email ?? 'Email'),
                         validator: (v) => v == null || !v.contains('@') ? 'Invalid email' : null,
                       ),
                       TextFormField(
                         controller: phoneController,
-                        decoration: const InputDecoration(labelText: 'Phone Number'),
+                        decoration: InputDecoration(labelText: l?.phoneLabel ?? 'Phone Number'),
                       ),
                       if (user == null)
                         TextFormField(
                           controller: passwordController,
-                          decoration: const InputDecoration(labelText: 'Password'),
+                          decoration: InputDecoration(labelText: l?.password ?? 'Password'),
                           obscureText: true,
                           validator: (v) => v == null || v.length < 8 ? 'Password must be at least 8 chars' : null,
                         ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(labelText: 'Role'),
+                        decoration: InputDecoration(labelText: l?.roleLabel ?? 'Role'),
                         initialValue: selectedRole,
-                        items: const [
-                          DropdownMenuItem(value: 'customer', child: Text('Customer')),
-                          DropdownMenuItem(value: 'delivery', child: Text('Driver')),
-                          DropdownMenuItem(value: 'admin', child: Text('Admin')),
+                        items: [
+                          DropdownMenuItem(value: 'customer', child: Text(l?.customer ?? 'Customer')),
+                          DropdownMenuItem(value: 'delivery', child: Text(l?.driver ?? 'Driver')),
+                          DropdownMenuItem(value: 'admin', child: Text(l?.admin ?? 'Admin')),
                         ],
                         onChanged: (val) {
                           if (val != null) {
@@ -2579,7 +2795,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+                  child: Text(l?.cancel ?? 'Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withAlpha(150))),
                 ),
                 TextButton(
                   onPressed: () {
@@ -2600,7 +2816,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       Navigator.pop(ctx);
                     }
                   },
-                  child: const Text('Save'),
+                  child: Text(l?.save ?? 'Save'),
                 ),
               ],
             );
@@ -2614,12 +2830,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   // TAB 7: ANALYTICS & REPORTS
   // -------------------------------------------------------------
   Widget _buildAnalyticsView(AdminLoaded state) {
+    final l = AppLocalizations.of(context);
+    final isAr = Localizations.localeOf(context).languageCode == 'ar';
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Analytics & Performance Reports', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(l?.analyticsPerformanceReports ?? 'Analytics & Performance Reports', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 24),
           // Revenue bar chart
           Card(
@@ -2630,10 +2848,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Revenue Reports (Last 7 Days)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(l?.revenueReportsLast7Days ?? 'Revenue Reports (Last 7 Days)', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 24),
                   state.revenueByDay.isEmpty
-                      ? const Center(child: Padding(padding: EdgeInsets.symmetric(vertical: 32), child: Text('No revenue data available.')))
+                      ? Center(child: Padding(padding: const EdgeInsets.symmetric(vertical: 32), child: Text(l?.noRevenueDataAvailable ?? 'No revenue data available.')))
                       : SizedBox(
                           height: 180,
                           child: Row(
@@ -2642,10 +2860,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             children: state.revenueByDay.entries.map((e) {
                               final maxRevenue = state.revenueByDay.values.fold(0.0, (max, val) => val > max ? val : max);
                               final heightPct = maxRevenue > 0 ? e.value / maxRevenue : 0.0;
+                              final parsedDate = DateTime.tryParse(e.key);
+                              final formattedDate = parsedDate != null
+                                  ? intl.DateFormat.MMMd(Localizations.localeOf(context).languageCode).format(parsedDate)
+                                  : e.key.substring(5);
                               return Column(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
-                                  Text('\$${e.value.toStringAsFixed(0)}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                  Text(DataLocalizationHelper.formatCurrency(context, e.value), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                                   const SizedBox(height: 4),
                                   Container(
                                     width: 40,
@@ -2660,7 +2882,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  Text(e.key.substring(5), style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                                  Text(formattedDate, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurface.withAlpha(150))),
                                 ],
                               );
                             }).toList(),
@@ -2680,10 +2902,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Top Selling Meals', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(l?.topSellingMeals ?? 'Top Selling Meals', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   state.topSellingMeals.isEmpty
-                      ? const Center(child: Text('No sales records.'))
+                      ? Center(child: Text(l?.noSalesRecords ?? 'No sales records.'))
                       : ListView.separated(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
@@ -2691,13 +2913,17 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           separatorBuilder: (context, index) => const Divider(),
                           itemBuilder: (context, index) {
                             final meal = state.topSellingMeals[index];
+                            final matchedName = isAr ? (meal['name_ar'] ?? meal['name']) : (meal['name_en'] ?? meal['name']);
                             return ListTile(
                               contentPadding: EdgeInsets.zero,
-                              leading: Text('#${index + 1}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                              title: Text(meal['name'], style: const TextStyle(fontWeight: FontWeight.w600)),
-                              subtitle: Text('Units Sold: ${meal['sales']}'),
+                              leading: Text(
+                                '#${DataLocalizationHelper.formatNumber(context, index + 1)}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              ),
+                              title: Text(matchedName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                              subtitle: Text('${l?.unitsSoldLabel ?? "Units Sold"}: ${DataLocalizationHelper.formatNumber(context, meal['sales'])}'),
                               trailing: Text(
-                                '\$${meal['revenue'].toStringAsFixed(2)}',
+                                DataLocalizationHelper.formatCurrency(context, meal['revenue']),
                                 style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
                               ),
                             );
@@ -2712,10 +2938,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  // -------------------------------------------------------------
-  // TAB 8: SYSTEM SETTINGS
-  // -------------------------------------------------------------
   Widget _buildSettingsView(AdminLoaded state) {
+    final l = AppLocalizations.of(context);
     final formKey = GlobalKey<FormState>();
     final appController = TextEditingController(text: state.settings['app_name'] ?? 'Delivry App');
     final feeController = TextEditingController(text: state.settings['delivery_fee']?.toString() ?? '2.50');
@@ -2728,7 +2952,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('System Configurations', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(l?.systemConfigurations ?? 'System Configurations', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 24),
           Card(
             elevation: 1,
@@ -2742,28 +2966,28 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   children: [
                     TextFormField(
                       controller: appController,
-                      decoration: const InputDecoration(labelText: 'Application Name'),
-                      validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                      decoration: InputDecoration(labelText: l?.applicationName ?? 'Application Name'),
+                      validator: (v) => v == null || v.isEmpty ? (l?.requiredField ?? 'Required') : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: feeController,
-                      decoration: const InputDecoration(labelText: 'Default Delivery Fee (\$)'),
+                      decoration: InputDecoration(labelText: '${l?.deliveryFeeLabel ?? "Default Delivery Fee"} (\$)'),
                       keyboardType: TextInputType.number,
                       validator: (v) => double.tryParse(v ?? '') == null ? 'Must be valid' : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: taxController,
-                      decoration: const InputDecoration(labelText: 'Tax Rate (e.g. 0.15 for 15%)'),
+                      decoration: InputDecoration(labelText: '${l?.taxRate ?? "Tax Rate"} (e.g. 0.15 for 15%)'),
                       keyboardType: TextInputType.number,
                       validator: (v) => double.tryParse(v ?? '') == null ? 'Must be valid' : null,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: currencyController,
-                      decoration: const InputDecoration(labelText: 'Currency Settings'),
-                      validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                      decoration: InputDecoration(labelText: l?.currencySettings ?? 'Currency Settings'),
+                      validator: (v) => v == null || v.isEmpty ? (l?.requiredField ?? 'Required') : null,
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton(
@@ -2780,7 +3004,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         }
                       },
                       style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                      child: const Text('Save Settings', style: TextStyle(color: Colors.white)),
+                      child: Text(l?.saveSettings ?? 'Save Settings', style: const TextStyle(color: Colors.white)),
                     ),
                   ],
                 ),
@@ -2796,15 +3020,15 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Broadcast Notification', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(l?.broadcastNotification ?? 'Broadcast Notification', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  const Text('Send an instant broadcast push notification to all active customer devices.',
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  Text(l?.sendAnInstantBroadcastPushNotificationToAllActiveCustomerDevices ?? 'Send an instant broadcast push notification to all active customer devices.',
+                      style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withAlpha(150))),
                   const SizedBox(height: 16),
                   TextField(
                     controller: promoController,
                     decoration: InputDecoration(
-                      hintText: 'Enter notification message here...',
+                      hintText: l?.enterNotificationMessageHere ?? 'Enter notification message here...',
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
@@ -2820,7 +3044,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       }
                     },
                     icon: const Icon(Icons.send_rounded, color: Colors.white, size: 18),
-                    label: const Text('Send Broadcast', style: TextStyle(color: Colors.white)),
+                    label: Text(l?.sendBroadcast ?? 'Send Broadcast', style: const TextStyle(color: Colors.white)),
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
                   ),
                 ],

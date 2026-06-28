@@ -14,6 +14,7 @@ import '../widgets/home_skeleton.dart';
 import '../../../notifications/presentation/bloc/notifications_bloc.dart';
 import '../../../notifications/presentation/bloc/notifications_event.dart';
 import '../../../notifications/presentation/bloc/notifications_state.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -112,19 +113,19 @@ class _HomePageState extends State<HomePage> {
     return BlocProvider.value(
       value: _homeBloc,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           elevation: 0,
           centerTitle: false,
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Deliver to',
+                AppLocalizations.of(context)?.deliverTo ?? 'Deliver to',
                 style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.textSecondary,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                   fontWeight: FontWeight.w400,
                 ),
               ),
@@ -134,7 +135,7 @@ class _HomePageState extends State<HomePage> {
                     'San Francisco, CA',
                     style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.onBackground,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -157,12 +158,12 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       Container(
                         margin: const EdgeInsets.only(right: 16),
-                        decoration: const BoxDecoration(
-                          color: AppColors.background,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.notifications_none, color: AppColors.onBackground),
+                          icon: Icon(Icons.notifications_none, color: Theme.of(context).colorScheme.onSurface),
                           onPressed: () async {
                             await context.push('/notifications');
                             if (context.mounted) {

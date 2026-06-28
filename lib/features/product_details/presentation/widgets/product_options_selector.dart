@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/addon_entity.dart';
 import '../../domain/entities/variation_entity.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
+import '../../../../core/utils/data_localization_helper.dart';
 
 class ProductOptionsSelector extends StatelessWidget {
   final List<VariationEntity> variations;
@@ -27,15 +29,15 @@ class ProductOptionsSelector extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (variations.isNotEmpty) ...[
-          const Text(
-            'Choice of size',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Text(
+            AppLocalizations.of(context)?.choiceOfSize ?? 'Choice of size',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           ...variations.map((v) => // ignore: deprecated_member_use
               RadioListTile<String>(
-                title: Text(v.name),
-                secondary: Text('+\$${v.price.toStringAsFixed(2)}'),
+                title: Text(DataLocalizationHelper.translate(context, v.name), style: const TextStyle(fontWeight: FontWeight.w500)),
+                secondary: Text('+${DataLocalizationHelper.formatCurrency(context, v.price)}'),
                 value: v.id,
                 // ignore: deprecated_member_use
                 groupValue: selectedVariationId,
@@ -47,14 +49,14 @@ class ProductOptionsSelector extends StatelessWidget {
           const SizedBox(height: 24),
         ],
         if (addons.isNotEmpty) ...[
-          const Text(
-            'Frequently bought together',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Text(
+            AppLocalizations.of(context)?.frequentlyBoughtTogether ?? 'Frequently bought together',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           ...addons.map((a) => CheckboxListTile(
-                title: Text(a.name),
-                secondary: Text('+\$${a.price.toStringAsFixed(2)}'),
+                title: Text(DataLocalizationHelper.translate(context, a.name), style: const TextStyle(fontWeight: FontWeight.w500)),
+                secondary: Text('+${DataLocalizationHelper.formatCurrency(context, a.price)}'),
                 value: selectedAddonIds.contains(a.id),
                 activeColor: AppColors.primary,
                 onChanged: (value) => onAddonToggled(a.id),

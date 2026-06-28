@@ -7,6 +7,7 @@ import '../bloc/home_bloc.dart';
 import '../bloc/home_event.dart';
 import '../bloc/home_state.dart';
 import '../widgets/home_popular_meals.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -36,10 +37,10 @@ class _SearchPageState extends State<SearchPage> {
     return BlocProvider.value(
       value: _searchBloc,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          title: const Text('Search'),
-          backgroundColor: Colors.white,
+          title: Text(AppLocalizations.of(context)?.search ?? 'Search'),
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 0,
         ),
         body: Column(
@@ -53,7 +54,7 @@ class _SearchPageState extends State<SearchPage> {
                   _searchBloc.add(SearchRequested(query));
                 },
                 decoration: InputDecoration(
-                  hintText: 'Search for meals...',
+                  hintText: AppLocalizations.of(context)?.searchForMeals ?? 'Search for meals...',
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.clear),
@@ -63,7 +64,7 @@ class _SearchPageState extends State<SearchPage> {
                     },
                   ),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: Theme.of(context).colorScheme.surface,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -80,12 +81,12 @@ class _SearchPageState extends State<SearchPage> {
                     final meals = state.popularMeals;
 
                     if (meals.isEmpty) {
-                      return const Center(
+                      return Center(
                         child: Text(
-                          'The meal you are searching for does not exist.',
+                          AppLocalizations.of(context)?.mealNotFound ?? 'The meal you are searching for does not exist.',
                           style: TextStyle(
                             fontSize: 16,
-                            color: AppColors.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -99,8 +100,8 @@ class _SearchPageState extends State<SearchPage> {
                   } else if (state is HomeError) {
                     return Center(child: Text(state.message));
                   }
-                  return const Center(
-                    child: Text('Search for your favorite food!'),
+                  return Center(
+                    child: Text(AppLocalizations.of(context)?.searchFavoriteFood ?? 'Search for your favorite food!'),
                   );
                 },
               ),

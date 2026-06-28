@@ -12,6 +12,8 @@ import '../bloc/product_detail_event.dart';
 import '../bloc/product_detail_state.dart';
 import '../widgets/product_image_gallery.dart';
 import '../widgets/product_options_selector.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
+import '../../../../core/utils/data_localization_helper.dart';
 
 class ProductDetailsPage extends StatefulWidget {
   final int productId;
@@ -43,7 +45,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     return BlocProvider(
       create: (context) => _bloc,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: BlocBuilder<ProductDetailBloc, ProductDetailState>(
           builder: (context, state) {
             if (state is ProductDetailLoading) {
@@ -68,15 +70,15 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                   Expanded(
                                     child: Text(
                                       product.name,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 26,
                                         fontWeight: FontWeight.bold,
-                                        color: AppColors.onBackground,
+                                        color: Theme.of(context).colorScheme.onSurface,
                                       ),
                                     ),
                                   ),
                                   Text(
-                                    '\$${product.price.toStringAsFixed(2)}',
+                                    DataLocalizationHelper.formatCurrency(context, product.price),
                                     style: const TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.bold,
@@ -88,9 +90,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                               const SizedBox(height: 12),
                               Text(
                                 product.description,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
-                                  color: AppColors.textSecondary,
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                   height: 1.5,
                                 ),
                               ),
@@ -104,12 +106,12 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                 onAddonToggled: (id) => _bloc.add(ToggleAddon(id)),
                               ),
                               const SizedBox(height: 24),
-                              const Text(
-                                'Special Instructions',
+                              Text(
+                                AppLocalizations.of(context)?.specialInstructions ?? 'Special Instructions',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.onBackground,
+                                  color: Theme.of(context).colorScheme.onSurface,
                                 ),
                               ),
                               const SizedBox(height: 12),
@@ -117,7 +119,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                 controller: _notesController,
                                 maxLines: 3,
                                 decoration: InputDecoration(
-                                  hintText: 'e.g. No onions, please.',
+                                  hintText: AppLocalizations.of(context)?.specialInstructionsHint ?? 'e.g. No onions, please.',
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
                                     borderSide: const BorderSide(color: AppColors.outline),
@@ -139,9 +141,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                     top: 40,
                     left: 20,
                     child: CircleAvatar(
-                      backgroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.surface,
                       child: IconButton(
-                        icon: const Icon(Icons.close, color: AppColors.onBackground),
+                        icon: Icon(Icons.close, color: Theme.of(context).colorScheme.onSurface),
                         onPressed: () => context.pop(),
                       ),
                     ),
@@ -151,13 +153,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
             } else if (state is ProductDetailError) {
               return Scaffold(
                 appBar: AppBar(
-                  backgroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.surface,
                   elevation: 0,
                   leading: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: AppColors.onBackground),
+                    icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
                     onPressed: () => context.pop(),
                   ),
-                  title: const Text('Meal Details', style: TextStyle(color: AppColors.onBackground)),
+                  title: Text(AppLocalizations.of(context)?.mealDetails ?? 'Meal Details', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
                 ),
                 body: Center(
                   child: Padding(
@@ -167,12 +169,12 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                       children: [
                         const Icon(Icons.restaurant_menu_outlined, size: 80, color: AppColors.primary),
                         const SizedBox(height: 24),
-                        const Text(
+                        Text(
                           'Meal Unavailable',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.onBackground,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -181,9 +183,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                               ? 'This meal is currently unavailable or belongs to an inactive restaurant.'
                               : state.message,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
-                            color: AppColors.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                             height: 1.5,
                           ),
                         ),
@@ -202,10 +204,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withAlpha(13),
+                      color: Theme.of(context).shadowColor.withAlpha(13),
                       blurRadius: 10,
                       offset: const Offset(0, -5),
                     ),
@@ -224,16 +226,16 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                               decoration: BoxDecoration(
                                 color: Colors.transparent,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.grey.shade300),
+                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
                               ),
-                              child: const Icon(Icons.remove, color: Colors.black54, size: 20),
+                              child: Icon(Icons.remove, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), size: 20),
                             ),
                           ),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 20),
                             child: Text(
                               state.quantity.toString(),
-                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
                             ),
                           ),
                           GestureDetector(
@@ -243,9 +245,9 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                               decoration: BoxDecoration(
                                 color: Colors.transparent,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.grey.shade300),
+                                border: Border.all(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2)),
                               ),
-                              child: const Icon(Icons.add, color: Colors.black54, size: 20),
+                              child: Icon(Icons.add, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), size: 20),
                             ),
                           ),
                         ],
@@ -276,7 +278,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                             context.pop();
                         },
                         child: Text(
-                          'Add to Cart - \$${state.totalPrice.toStringAsFixed(2)}',
+                          '${AppLocalizations.of(context)?.addToCart ?? "Add to Cart"} - ${DataLocalizationHelper.formatCurrency(context, state.totalPrice)}',
                           style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                       ),

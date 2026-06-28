@@ -14,14 +14,43 @@ class ProductResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $locale = app()->getLocale();
+
+        $nameEn = $this->getTranslation('name', 'en', false) ?: '';
+        $nameAr = $this->getTranslation('name', 'ar', false) ?: '';
+        $name = $locale === 'ar' ? $nameAr : $nameEn;
+        if (empty($name)) {
+            $name = $locale === 'ar' ? 'اسم غير متوفر' : 'Name not available';
+        }
+
+        $descEn = $this->getTranslation('description', 'en', false) ?: '';
+        $descAr = $this->getTranslation('description', 'ar', false) ?: '';
+        $description = $locale === 'ar' ? $descAr : $descEn;
+        if (empty($description)) {
+            $description = $locale === 'ar' ? 'الوصف غير متوفر' : 'Description not available';
+        }
+
+        $catEn = $this->getTranslation('category', 'en', false) ?: '';
+        $catAr = $this->getTranslation('category', 'ar', false) ?: '';
+        $category = $locale === 'ar' ? $catAr : $catEn;
+        if (empty($category)) {
+            $category = $locale === 'ar' ? 'غير مصنف' : 'Uncategorized';
+        }
+
         return [
             'id' => $this->id,
             'restaurant_id' => $this->restaurant_id,
-            'name' => $this->name,
+            'name_en' => $nameEn,
+            'name_ar' => $nameAr,
+            'name' => $name,
             'slug' => $this->slug,
-            'description' => $this->description,
+            'description_en' => $descEn,
+            'description_ar' => $descAr,
+            'description' => $description,
             'price' => (string) $this->price,
-            'category' => $this->category,
+            'category_en' => $catEn,
+            'category_ar' => $catAr,
+            'category' => $category,
             'is_available' => (bool) $this->is_available,
             'image_url' => $this->image_url,
             'restaurant' => $this->whenLoaded('restaurant', fn () => new RestaurantResource($this->restaurant)),

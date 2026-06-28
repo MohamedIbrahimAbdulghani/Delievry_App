@@ -6,6 +6,8 @@ import '../../../../core/widgets/custom_toastr.dart';
 import '../../domain/entities/restaurant_entity.dart';
 import '../bloc/home_bloc.dart';
 import '../bloc/home_event.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
+import '../../../../core/utils/data_localization_helper.dart';
 
 class HomeRestaurants extends StatelessWidget {
   final List<RestaurantEntity> restaurants;
@@ -23,13 +25,13 @@ class HomeRestaurants extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Featured Restaurants',
+                AppLocalizations.of(context)?.featuredRestaurants ?? 'Featured Restaurants',
                 style: Theme.of(context).textTheme.displayMedium?.copyWith(
                   fontSize: 20,
-                ) ?? const TextStyle(
+                ) ?? TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.onBackground,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontFamily: 'Plus Jakarta Sans',
                 ),
               ),
@@ -39,9 +41,9 @@ class HomeRestaurants extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text(
-                  'See All', 
-                  style: TextStyle(
+                child: Text(
+                  AppLocalizations.of(context)?.seeAll ?? 'See All', 
+                  style: const TextStyle(
                     color: AppColors.primary, 
                     fontWeight: FontWeight.w600,
                     fontFamily: 'Inter',
@@ -52,13 +54,13 @@ class HomeRestaurants extends StatelessWidget {
           ),
         ),
         restaurants.isEmpty
-            ? const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            ? Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
                 child: Center(
                   child: Text(
                     'No restaurants found.',
                     style: TextStyle(
-                      color: AppColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -77,7 +79,7 @@ class HomeRestaurants extends StatelessWidget {
               child: Container(
                 margin: const EdgeInsets.only(bottom: 24),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
@@ -124,13 +126,13 @@ class HomeRestaurants extends StatelessWidget {
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: Colors.white.withAlpha(230),
+                                color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Icon(
                                 restaurant.isFavorite ? Icons.favorite : Icons.favorite_border, 
                                 size: 22, 
-                                color: restaurant.isFavorite ? AppColors.primary : AppColors.textSecondary,
+                                color: restaurant.isFavorite ? AppColors.primary : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                               ),
                             ),
                           ),
@@ -141,11 +143,11 @@ class HomeRestaurants extends StatelessWidget {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: Theme.of(context).colorScheme.surface,
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withAlpha(20),
+                                  color: Theme.of(context).shadowColor.withAlpha(20),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 )
@@ -180,10 +182,10 @@ class HomeRestaurants extends StatelessWidget {
                                   restaurant.name,
                                   style: Theme.of(context).textTheme.displayMedium?.copyWith(
                                     fontSize: 20,
-                                  ) ?? const TextStyle(
+                                  ) ?? TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.onBackground,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -196,7 +198,9 @@ class HomeRestaurants extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
-                                  restaurant.deliveryFee == 0 ? "Free Delivery" : "\$${restaurant.deliveryFee.toStringAsFixed(2)}",
+                                  restaurant.deliveryFee == 0
+                                      ? (Localizations.localeOf(context).languageCode == 'ar' ? 'توصيل مجاني' : 'Free Delivery')
+                                      : DataLocalizationHelper.formatCurrency(context, restaurant.deliveryFee),
                                   style: const TextStyle(
                                     fontSize: 14,
                                     color: AppColors.primary,
@@ -210,22 +214,22 @@ class HomeRestaurants extends StatelessWidget {
                           const SizedBox(height: 12),
                           Row(
                             children: [
-                              const Icon(Icons.access_time_rounded, size: 18, color: AppColors.textSecondary),
+                              Icon(Icons.access_time_rounded, size: 18, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                               const SizedBox(width: 6),
                               Text(
-                                '25-30 min', // Placeholder time
+                                '25-30 ${AppLocalizations.of(context)?.min ?? 'min'}',
                                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: AppColors.textSecondary,
+                                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                 ),
                               ),
                               const SizedBox(width: 24),
-                              const Icon(Icons.location_on_rounded, size: 18, color: AppColors.textSecondary),
+                              Icon(Icons.location_on_rounded, size: 18, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
-                                  restaurant.city,
+                                  DataLocalizationHelper.translate(context, restaurant.city),
                                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppColors.textSecondary,
+                                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,

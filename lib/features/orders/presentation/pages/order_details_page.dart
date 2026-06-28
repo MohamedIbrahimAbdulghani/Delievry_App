@@ -9,6 +9,8 @@ import '../bloc/orders_event.dart';
 import '../bloc/orders_state.dart';
 import '../../domain/entities/order_entity.dart';
 import '../widgets/order_status_badge.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
+import '../../../../core/utils/data_localization_helper.dart';
 
 class OrderDetailsPage extends StatefulWidget {
   final int orderId;
@@ -32,15 +34,15 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     return BlocProvider(
       create: (context) => _bloc,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.onBackground),
+            icon: Icon(Icons.arrow_back, color: Theme.of(context).colorScheme.onSurface),
             onPressed: () => context.pop(),
           ),
-          title: const Text('Order Details', style: TextStyle(color: AppColors.onBackground, fontWeight: FontWeight.bold)),
+          title: Text(AppLocalizations.of(context)?.orderDetails ?? 'Order Details', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold)),
         ),
         body: BlocBuilder<OrdersBloc, OrdersState>(
           builder: (context, state) {
@@ -76,7 +78,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
   Widget _buildRestaurantCard(dynamic order) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(12)),
       child: Row(
         children: [
           ClipRRect(
@@ -86,7 +88,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
               width: 60,
               height: 60,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(width: 60, height: 60, color: Colors.grey[200]),
+              errorBuilder: (context, error, stackTrace) => Container(width: 60, height: 60, color: Theme.of(context).colorScheme.surface),
             ),
           ),
           const SizedBox(width: 16),
@@ -94,8 +96,8 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(order.restaurant.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                Text(order.restaurant.city, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                Text(order.restaurant.name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Theme.of(context).colorScheme.onSurface)),
+                Text(order.restaurant.city, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 14)),
               ],
             ),
           ),
@@ -108,20 +110,20 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
   Widget _buildItemsList(dynamic order) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(12)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Order Items', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(AppLocalizations.of(context)?.items ?? 'Order Items', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Theme.of(context).colorScheme.onSurface)),
           const SizedBox(height: 12),
           ...order.items.map((item) => Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Row(
               children: [
-                Text('${item.quantity}x', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+                Text('${DataLocalizationHelper.formatNumber(context, item.quantity)}x', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
                 const SizedBox(width: 12),
-                Expanded(child: Text(item.productName)),
-                Text('\$${item.unitPrice.toStringAsFixed(2)}'),
+                Expanded(child: Text(item.productName, style: TextStyle(color: Theme.of(context).colorScheme.onSurface))),
+                Text(DataLocalizationHelper.formatCurrency(context, item.unitPrice), style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
               ],
             ),
           )),
@@ -133,14 +135,14 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
   Widget _buildPaymentSummary(dynamic order) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(12)),
       child: Column(
         children: [
-          _buildRow('Subtotal', '\$${(order.totalAmount - 5).toStringAsFixed(2)}'),
+          _buildRow(AppLocalizations.of(context)?.subtotal ?? 'Subtotal', DataLocalizationHelper.formatCurrency(context, order.totalAmount - 5.0), context),
           const SizedBox(height: 8),
-          _buildRow('Delivery Fee', '\$5.00'),
+          _buildRow(AppLocalizations.of(context)?.deliveryFee ?? 'Delivery Fee', DataLocalizationHelper.formatCurrency(context, 5.0), context),
           const Divider(height: 24),
-          _buildRow('Total', '\$${order.totalAmount.toStringAsFixed(2)}', isBold: true),
+          _buildRow(AppLocalizations.of(context)?.total ?? 'Total', DataLocalizationHelper.formatCurrency(context, order.totalAmount), context, isBold: true),
         ],
       ),
     );
@@ -150,18 +152,18 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(12)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Delivery Info', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(AppLocalizations.of(context)?.deliveryInfo ?? 'Delivery Info', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Theme.of(context).colorScheme.onSurface)),
           const SizedBox(height: 12),
-          const Text('Address:', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-          Text(order.deliveryAddress, style: const TextStyle(fontSize: 14)),
+          Text('${AppLocalizations.of(context)?.deliveryAddress ?? 'Address'}:', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 12)),
+          Text(order.deliveryAddress, style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface)),
           if (order.notes != null) ...[
             const SizedBox(height: 12),
-            const Text('Notes:', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-            Text(order.notes!, style: const TextStyle(fontSize: 14)),
+            Text('${AppLocalizations.of(context)?.notes ?? 'Notes'}:', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 12)),
+            Text(order.notes!, style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface)),
           ],
           if (order.status != OrderStatus.delivered &&
               order.status != OrderStatus.cancelled &&
@@ -172,7 +174,7 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
               child: ElevatedButton.icon(
                 onPressed: () => context.push('/track-order/${order.id}'),
                 icon: const Icon(Icons.location_on_outlined, color: Colors.white),
-                label: const Text('Track My Order', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                label: Text(AppLocalizations.of(context)?.trackOrder ?? 'Track My Order', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -186,12 +188,12 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
     );
   }
 
-  Widget _buildRow(String label, String value, {bool isBold = false}) {
+  Widget _buildRow(String label, String value, BuildContext context, {bool isBold = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
-        Text(value, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.w600, color: isBold ? AppColors.primary : AppColors.onBackground)),
+        Text(label, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.normal, color: Theme.of(context).colorScheme.onSurface)),
+        Text(value, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.w600, color: isBold ? AppColors.primary : Theme.of(context).colorScheme.onSurface)),
       ],
     );
   }

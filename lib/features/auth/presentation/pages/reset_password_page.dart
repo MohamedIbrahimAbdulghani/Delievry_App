@@ -6,6 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/custom_toastr.dart';
 import '../../../../di/injection_container.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -28,6 +29,8 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
 
   @override
   void dispose() {
@@ -88,10 +91,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                       const SizedBox(height: 32),
                       TextFormField(
                         controller: _passwordController,
-                        obscureText: true,
-                        decoration: const InputDecoration(
-                          hintText: 'New Password',
-                          prefixIcon: Icon(Icons.lock_outline),
+                        obscureText: !_isPasswordVisible,
+                        decoration: InputDecoration(
+                          hintText: AppLocalizations.of(context)?.password ?? 'New Password',
+                          prefixIcon: const Icon(Icons.lock_outline),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty || value.length < 8) {
@@ -103,10 +106,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _confirmPasswordController,
-                        obscureText: true,
-                        decoration: const InputDecoration(
-                          hintText: 'Confirm Password',
-                          prefixIcon: Icon(Icons.lock_outline),
+                        obscureText: !_isConfirmPasswordVisible,
+                        decoration: InputDecoration(
+                          hintText: AppLocalizations.of(context)?.confirmLogout ?? 'Confirm Password',
+                          prefixIcon: const Icon(Icons.lock_outline),
                         ),
                         validator: (value) {
                           if (value != _passwordController.text) {

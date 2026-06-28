@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
@@ -36,9 +38,26 @@ import '../../features/delivery/presentation/pages/delivery_dashboard_page.dart'
 import '../../features/delivery/presentation/pages/delivery_tracking_page.dart';
 import '../../features/restaurant_details/presentation/pages/rating_page.dart';
 import '../../features/profile/domain/usecases/profile_usecases.dart';
+import '../settings/presentation/bloc/settings_cubit.dart';
+
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen(
+      (dynamic _) => notifyListeners(),
+    );
+  }
+  late final StreamSubscription<dynamic> _subscription;
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
 
 final appRouter = GoRouter(
   initialLocation: '/splash',
+  refreshListenable: GoRouterRefreshStream(sl<SettingsCubit>().stream),
   redirect: (context, state) {
     final sessionManager = sl<SessionManager>();
     final matchedLocation = state.matchedLocation;
@@ -334,6 +353,7 @@ class _MainShellPageState extends State<MainShellPage> {
     return Scaffold(
       body: widget.navigationShell,
       bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Theme.of(context).colorScheme.surface,
         currentIndex: widget.navigationShell.currentIndex,
         onTap: (index) {
           widget.navigationShell.goBranch(
@@ -343,24 +363,24 @@ class _MainShellPageState extends State<MainShellPage> {
         },
         type: BottomNavigationBarType.fixed,
         selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textSecondary,
+        unselectedItemColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
         showSelectedLabels: true,
         showUnselectedLabels: true,
         items: [
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home_rounded),
-            label: 'Home',
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.home_outlined),
+            activeIcon: const Icon(Icons.home_rounded),
+            label: AppLocalizations.of(context)!.home,
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border_rounded),
-            activeIcon: Icon(Icons.favorite_rounded),
-            label: 'Favorites',
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.favorite_border_rounded),
+            activeIcon: const Icon(Icons.favorite_rounded),
+            label: AppLocalizations.of(context)!.favorites,
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.receipt_long_outlined),
-            activeIcon: Icon(Icons.receipt_long_rounded),
-            label: 'Orders',
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.receipt_long_outlined),
+            activeIcon: const Icon(Icons.receipt_long_rounded),
+            label: AppLocalizations.of(context)!.orders,
           ),
           BottomNavigationBarItem(
             icon: BlocBuilder<CartBloc, CartState>(
@@ -389,12 +409,12 @@ class _MainShellPageState extends State<MainShellPage> {
                 );
               },
             ),
-            label: 'Cart',
+            label: AppLocalizations.of(context)!.cart,
           ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person_rounded),
-            label: 'Profile',
+          BottomNavigationBarItem(
+            icon: const Icon(Icons.person_outline),
+            activeIcon: const Icon(Icons.person_rounded),
+            label: AppLocalizations.of(context)!.profile,
           ),
         ],
       ),

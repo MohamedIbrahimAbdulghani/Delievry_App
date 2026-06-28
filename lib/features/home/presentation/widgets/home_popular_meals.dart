@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/data_localization_helper.dart';
 import '../../domain/entities/meal_entity.dart';
 
 class HomePopularMeals extends StatelessWidget {
@@ -18,17 +20,17 @@ class HomePopularMeals extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Popular Meals',
+              Text(
+                AppLocalizations.of(context)?.popularMeals ?? 'Popular Meals',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.onBackground,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               TextButton(
                 onPressed: () => context.push('/search'),
-                child: const Text('See All', style: TextStyle(color: AppColors.primary)),
+                child: Text(AppLocalizations.of(context)?.seeAll ?? 'See All', style: const TextStyle(color: AppColors.primary)),
               ),
             ],
           ),
@@ -45,11 +47,11 @@ class HomePopularMeals extends StatelessWidget {
               child: Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withAlpha(13),
+                      color: Theme.of(context).shadowColor.withAlpha(13),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -82,16 +84,16 @@ class HomePopularMeals extends StatelessWidget {
                           children: [
                             Text(
                               meal.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.onBackground,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               meal.description,
-                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -100,7 +102,7 @@ class HomePopularMeals extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  '\$${meal.price.toStringAsFixed(2)}',
+                                  DataLocalizationHelper.formatCurrency(context, meal.price),
                                   style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,

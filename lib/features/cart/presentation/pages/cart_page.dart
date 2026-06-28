@@ -8,6 +8,7 @@ import '../bloc/cart_event.dart';
 import '../bloc/cart_state.dart';
 import '../widgets/cart_item_tile.dart';
 import '../widgets/cart_summary_card.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -26,15 +27,15 @@ class _CartPageState extends State<CartPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
-        title: const Text('My Cart', style: TextStyle(color: AppColors.onBackground, fontWeight: FontWeight.bold)),
+        title: Text(AppLocalizations.of(context)?.myCart ?? 'My Cart', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold)),
         actions: [
           TextButton(
             onPressed: () => context.read<CartBloc>().add(ClearCart()),
-            child: const Text('Clear', style: TextStyle(color: AppColors.error)),
+            child: Text(AppLocalizations.of(context)?.clearBtn ?? 'Clear', style: const TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -87,9 +88,9 @@ class _CartPageState extends State<CartPage> {
           children: [
             Icon(Icons.shopping_cart_outlined, size: 100, color: Colors.grey[300]),
             const SizedBox(height: 24),
-            const Text('Your cart is empty', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(AppLocalizations.of(context)?.cartEmpty ?? 'Your cart is empty', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
-            Text('Looks like you haven\'t added anything yet', style: TextStyle(color: Colors.grey[500]), textAlign: TextAlign.center),
+            Text(AppLocalizations.of(context)?.addItemsToCart ?? 'Looks like you haven\'t added anything yet', style: TextStyle(color: Colors.grey[500]), textAlign: TextAlign.center),
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () => context.go('/home'),
@@ -103,9 +104,9 @@ class _CartPageState extends State<CartPage> {
                 elevation: 0,
                 minimumSize: const Size(180, 48),
               ),
-              child: const Text(
-                'Go Shopping',
-                style: TextStyle(
+              child: Text(
+                AppLocalizations.of(context)?.goShopping ?? 'Go Shopping',
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),

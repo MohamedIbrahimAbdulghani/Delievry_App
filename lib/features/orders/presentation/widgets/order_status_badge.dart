@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/order_entity.dart';
+import '../../../../core/utils/order_status_l10n.dart';
 
 class OrderStatusBadge extends StatelessWidget {
   final OrderStatus status;
@@ -15,7 +16,7 @@ class OrderStatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        status.name.toUpperCase(),
+        status.localize(context).toUpperCase(),
         style: TextStyle(
           color: _getColor(),
           fontSize: 10,
@@ -24,6 +25,8 @@ class OrderStatusBadge extends StatelessWidget {
       ),
     );
   }
+
+
 
   Color _getColor() {
     switch (status) {

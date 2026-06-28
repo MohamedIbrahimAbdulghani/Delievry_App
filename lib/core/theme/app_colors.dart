@@ -10,6 +10,13 @@ class AppColors {
   static const Color textSecondary = Color(0xFF5A5C5C);
   static const Color outline = Color(0xFFE7E8E8);
 
+  // Dark Mode Colors
+  static const Color darkBackground = Color(0xFF121212);
+  static const Color darkSurface = Color(0xFF1E1E1E);
+  static const Color darkOnBackground = Colors.white;
+  static const Color darkOutline = Color(0xFF333333);
+  static const Color darkTextSecondary = Color(0xFFAAAAAA);
+
   // ألوان خلفية الـ Splash Screen الـ Premium
   static const Color splashBgStart = Color(0xFF0F172A);
   static const Color splashBgCenter = Color(0xFF111827);

@@ -7,6 +7,8 @@ import '../../../../core/auth/session_manager.dart';
 import '../../../auth/data/models/user_model.dart';
 import '../../../profile/domain/repositories/user_repository.dart';
 import '../bloc/delivery_state.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
+import '../../../../core/utils/data_localization_helper.dart';
 
 class DriverProfileView extends StatelessWidget {
   final DeliveryLoaded state;
@@ -41,13 +43,13 @@ class DriverProfileView extends StatelessWidget {
           const SizedBox(height: 24),
 
           // Statistics Summary
-          _buildSectionHeader('Performance Overview'),
+          _buildSectionHeader(context, AppLocalizations.of(context)?.performanceOverview ?? 'Performance Overview'),
           const SizedBox(height: 10),
-          _buildStatisticsList(earnings),
+          _buildStatisticsList(context, earnings),
           const SizedBox(height: 24),
 
           // Settings/Actions List
-          _buildSectionHeader('Account Settings'),
+          _buildSectionHeader(context, AppLocalizations.of(context)?.accountSettings ?? 'Account Settings'),
           const SizedBox(height: 10),
           Card(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -55,21 +57,21 @@ class DriverProfileView extends StatelessWidget {
               children: [
                 ListTile(
                   leading: const Icon(Icons.person_outline_rounded, color: AppColors.primary),
-                  title: const Text('Edit Profile Details'),
+                  title: Text(AppLocalizations.of(context)?.editProfileDetails ?? 'Edit Profile Details'),
                   trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
                   onTap: () => _showEditProfileDialog(context),
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.lock_outline_rounded, color: AppColors.primary),
-                  title: const Text('Change Password'),
+                  title: Text(AppLocalizations.of(context)?.changePassword ?? 'Change Password'),
                   trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
                   onTap: () => _showChangePasswordDialog(context),
                 ),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.logout_rounded, color: Colors.red),
-                  title: const Text('Logout', style: TextStyle(color: Colors.red)),
+                  title: Text(AppLocalizations.of(context)?.logout ?? 'Logout', style: const TextStyle(color: Colors.red)),
                   trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
                   onTap: () => _showLogoutConfirmation(context),
                 ),
@@ -81,7 +83,7 @@ class DriverProfileView extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(BuildContext context, String title) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Text(
@@ -91,28 +93,30 @@ class DriverProfileView extends StatelessWidget {
     );
   }
 
-  Widget _buildStatisticsList(Map<String, dynamic> earnings) {
-    final todayPay = earnings['today_earnings'] ?? 0.0;
-    final weeklyPay = earnings['weekly_earnings'] ?? 0.0;
-    final monthlyPay = earnings['monthly_earnings'] ?? 0.0;
-    final totalPay = earnings['total_earnings'] ?? 0.0;
+  Widget _buildStatisticsList(BuildContext context, Map<String, dynamic> earnings) {
+    final todayPay = (earnings['today_earnings'] as num? ?? 0.0).toDouble();
+    final weeklyPay = (earnings['weekly_earnings'] as num? ?? 0.0).toDouble();
+    final monthlyPay = (earnings['monthly_earnings'] as num? ?? 0.0).toDouble();
+    final totalPay = (earnings['total_earnings'] as num? ?? 0.0).toDouble();
     final totalDeliveries = earnings['total_deliveries'] ?? 0;
+    final l = AppLocalizations.of(context);
 
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Theme.of(context).cardColor,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            _buildStatRow('Total Earnings', '\$${totalPay.toStringAsFixed(2)}', Colors.green),
+            _buildStatRow(l?.totalEarnings ?? 'Total Earnings', DataLocalizationHelper.formatCurrency(context, totalPay), Colors.green),
             const Divider(),
-            _buildStatRow('Today\'s Payout', '\$${todayPay.toStringAsFixed(2)}', Colors.green),
+            _buildStatRow(l?.todayPayout ?? "Today's Payout", DataLocalizationHelper.formatCurrency(context, todayPay), Colors.green),
             const Divider(),
-            _buildStatRow('Weekly Payout', '\$${weeklyPay.toStringAsFixed(2)}', Colors.green),
+            _buildStatRow(l?.weeklyPayout ?? 'Weekly Payout', DataLocalizationHelper.formatCurrency(context, weeklyPay), Colors.green),
             const Divider(),
-            _buildStatRow('Monthly Payout', '\$${monthlyPay.toStringAsFixed(2)}', Colors.green),
+            _buildStatRow(l?.monthlyPayout ?? 'Monthly Payout', DataLocalizationHelper.formatCurrency(context, monthlyPay), Colors.green),
             const Divider(),
-            _buildStatRow('Completed Deliveries', '$totalDeliveries Trips', AppColors.primary),
+            _buildStatRow(l?.completedDeliveries ?? 'Completed Deliveries', l?.tripsCount(totalDeliveries) ?? (Localizations.localeOf(context).languageCode == 'ar' ? '${DataLocalizationHelper.formatNumber(context, totalDeliveries)} رحلات' : '$totalDeliveries Trips'), AppColors.primary),
           ],
         ),
       ),
@@ -139,17 +143,17 @@ class DriverProfileView extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Edit Profile Details'),
+        title: Text(AppLocalizations.of(context)?.editProfileDetails ?? 'Edit Profile Details'),
         content: Form(
           key: formKey,
           child: TextFormField(
             controller: nameController,
-            decoration: const InputDecoration(labelText: 'Full Name'),
-            validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+            decoration: InputDecoration(labelText: AppLocalizations.of(context)?.fullName ?? 'Full Name'),
+            validator: (v) => v == null || v.isEmpty ? AppLocalizations.of(context)?.requiredField ?? 'Required' : null,
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.of(context)?.cancel ?? 'Cancel')),
           TextButton(
             onPressed: () {
               if (formKey.currentState!.validate()) {
@@ -164,7 +168,7 @@ class DriverProfileView extends StatelessWidget {
                 );
               }
             },
-            child: const Text('Save'),
+            child: Text(AppLocalizations.of(context)?.save ?? 'Save'),
           ),
         ],
       ),
@@ -178,18 +182,18 @@ class DriverProfileView extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Change Password'),
+        title: Text(AppLocalizations.of(context)?.changePassword ?? 'Change Password'),
         content: Form(
           key: formKey,
           child: TextFormField(
             controller: passwordController,
             obscureText: true,
-            decoration: const InputDecoration(labelText: 'New Password'),
+            decoration: InputDecoration(labelText: AppLocalizations.of(context)?.password ?? 'New Password'),
             validator: (v) => v == null || v.length < 8 ? 'Password must be at least 8 characters' : null,
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(AppLocalizations.of(context)?.cancel ?? 'Cancel')),
           TextButton(
             onPressed: () {
               if (formKey.currentState!.validate()) {
@@ -211,12 +215,12 @@ class DriverProfileView extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Logout'),
-        content: const Text('Are you sure you want to log out of the Driver Panel?'),
+        title: Text(AppLocalizations.of(context)?.confirmLogout ?? 'Confirm Logout'),
+        content: Text(AppLocalizations.of(context)?.logoutConfirmationText ?? 'Are you sure you want to log out of the Driver Panel?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: Text(AppLocalizations.of(context)?.cancel ?? 'Cancel', style: const TextStyle(color: AppColors.textSecondary)),
           ),
           TextButton(
             onPressed: () async {
@@ -229,7 +233,7 @@ class DriverProfileView extends StatelessWidget {
                 context.go('/login');
               }
             },
-            child: const Text('Logout', style: TextStyle(color: Colors.red)),
+            child: Text(AppLocalizations.of(context)?.logout ?? 'Logout', style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),

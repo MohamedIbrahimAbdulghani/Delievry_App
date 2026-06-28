@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/custom_toastr.dart';
 import '../../../../di/injection_container.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
 import '../../../notifications/presentation/bloc/notifications_bloc.dart';
 import '../../../notifications/presentation/bloc/notifications_event.dart';
 import '../../../notifications/presentation/bloc/notifications_state.dart';
@@ -89,7 +90,7 @@ class _RatingPageState extends State<RatingPage> with SingleTickerProviderStateM
           }
         },
         child: Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
           body: Stack(
             children: [
               SafeArea(
@@ -106,26 +107,26 @@ class _RatingPageState extends State<RatingPage> with SingleTickerProviderStateM
                               child: Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: Theme.of(context).colorScheme.surface,
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withAlpha(13),
+                                      color: Theme.of(context).shadowColor.withAlpha(13),
                                       blurRadius: 10,
                                       offset: const Offset(0, 4),
                                     )
                                   ]
                                 ),
-                                child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.onBackground),
+                                child: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: Theme.of(context).colorScheme.onSurface),
                               ),
                             ),
                             const Spacer(),
-                            const Text(
+                            Text(
                               'Share Your Experience',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.onBackground,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 fontFamily: 'Outfit',
                               ),
                             ),
@@ -161,23 +162,23 @@ class _RatingPageState extends State<RatingPage> with SingleTickerProviderStateM
                               ),
                             ),
                             const SizedBox(height: 24),
-                            const Text(
-                              'How was your order?',
+                            Text(
+                              AppLocalizations.of(context)?.howWasYourOrder ?? 'How was your order?',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.onBackground,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 fontFamily: 'Outfit',
                               ),
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Your feedback helps us and the restaurant improve your next dining experience.',
+                              AppLocalizations.of(context)?.feedbackHelpsImprove ?? 'Your feedback helps us and the restaurant improve your next dining experience.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.grey[600],
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                 height: 1.4,
                               ),
                             ),
@@ -187,11 +188,11 @@ class _RatingPageState extends State<RatingPage> with SingleTickerProviderStateM
                             Container(
                               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.surface,
                                 borderRadius: BorderRadius.circular(24),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withAlpha(8),
+                                    color: Theme.of(context).shadowColor.withAlpha(8),
                                     blurRadius: 15,
                                     offset: const Offset(0, 8),
                                   )
@@ -200,11 +201,11 @@ class _RatingPageState extends State<RatingPage> with SingleTickerProviderStateM
                               child: Column(
                                 children: [
                                   Text(
-                                    'Rating: ${_selectedRating.toInt()} / 5 Stars',
-                                    style: const TextStyle(
+                                    AppLocalizations.of(context)?.ratingStars(_selectedRating.toInt()) ?? 'Rating: ${_selectedRating.toInt()} / 5 Stars',
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
-                                      color: AppColors.onBackground,
+                                      color: Theme.of(context).colorScheme.onSurface,
                                     ),
                                   ),
                                   const SizedBox(height: 16),
@@ -224,7 +225,7 @@ class _RatingPageState extends State<RatingPage> with SingleTickerProviderStateM
                                           },
                                           icon: Icon(
                                             isSelected ? Icons.star_rounded : Icons.star_border_rounded,
-                                            color: isSelected ? Colors.amber : Colors.grey[300],
+                                            color: isSelected ? Colors.amber : Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
                                             size: 44,
                                           ),
                                         ),
@@ -240,11 +241,11 @@ class _RatingPageState extends State<RatingPage> with SingleTickerProviderStateM
                             Container(
                               padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.surface,
                                 borderRadius: BorderRadius.circular(24),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withAlpha(8),
+                                    color: Theme.of(context).shadowColor.withAlpha(8),
                                     blurRadius: 15,
                                     offset: const Offset(0, 8),
                                   )
@@ -253,25 +254,25 @@ class _RatingPageState extends State<RatingPage> with SingleTickerProviderStateM
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    'Write a Review (Optional)',
+                                  Text(
+                                    AppLocalizations.of(context)?.writeReviewOptional ?? 'Write a Review (Optional)',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 15,
-                                      color: AppColors.onBackground,
+                                      color: Theme.of(context).colorScheme.onSurface,
                                     ),
                                   ),
                                   const SizedBox(height: 12),
                                   TextField(
                                     controller: _commentController,
                                     maxLines: 4,
-                                    style: const TextStyle(fontSize: 14, color: AppColors.onBackground),
+                                    style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
                                     decoration: InputDecoration(
-                                      hintText: 'Share details of your experience...',
-                                      hintStyle: TextStyle(color: Colors.grey[400]),
+                                      hintText: AppLocalizations.of(context)?.shareExperience ?? 'Share details of your experience...',
+                                      hintStyle: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4)),
                                       contentPadding: const EdgeInsets.all(16),
                                       filled: true,
-                                      fillColor: AppColors.background,
+                                      fillColor: Theme.of(context).scaffoldBackgroundColor,
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(16),
                                         borderSide: BorderSide.none,
@@ -356,7 +357,7 @@ class _RatingPageState extends State<RatingPage> with SingleTickerProviderStateM
                         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
                         margin: const EdgeInsets.symmetric(horizontal: 40),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(28),
                         ),
                         child: Column(
@@ -375,12 +376,12 @@ class _RatingPageState extends State<RatingPage> with SingleTickerProviderStateM
                               ),
                             ),
                             const SizedBox(height: 24),
-                            const Text(
+                            Text(
                               'Thank You!',
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.onBackground,
+                                color: Theme.of(context).colorScheme.onSurface,
                                 fontFamily: 'Outfit',
                               ),
                             ),
@@ -390,7 +391,7 @@ class _RatingPageState extends State<RatingPage> with SingleTickerProviderStateM
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.grey[600],
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                               ),
                             ),
                           ],

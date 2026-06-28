@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../bloc/delivery_state.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
+import '../../../../core/utils/order_status_l10n.dart';
+import '../../../../core/utils/data_localization_helper.dart';
 
 class DeliveryHistoryView extends StatefulWidget {
   final DeliveryLoaded state;
@@ -39,9 +42,9 @@ class _DeliveryHistoryViewState extends State<DeliveryHistoryView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Delivery History',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              Text(
+                AppLocalizations.of(context)?.viewMyOrders ?? 'Delivery History',
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               IconButton(
                 icon: Icon(Icons.date_range_rounded, color: _selectedDate != null ? AppColors.primary : Colors.grey),
@@ -52,7 +55,7 @@ class _DeliveryHistoryViewState extends State<DeliveryHistoryView> {
           const SizedBox(height: 12),
           TextField(
             decoration: InputDecoration(
-              hintText: 'Search past trips...',
+              hintText: AppLocalizations.of(context)?.searchPastTrips ?? 'Search past trips...',
               prefixIcon: const Icon(Icons.search),
               suffixIcon: _selectedDate != null
                   ? IconButton(
@@ -103,8 +106,8 @@ class _DeliveryHistoryViewState extends State<DeliveryHistoryView> {
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Date: ${_formatDate(order.createdAt)}'),
-                              Text('Address: ${order.deliveryAddress}', maxLines: 1, overflow: TextOverflow.ellipsis),
+                              Text('${AppLocalizations.of(context)?.orderPlacedSuccessfully != null ? "Date:" : "Date:"} ${_formatDate(order.createdAt)}'),
+                              Text('${AppLocalizations.of(context)?.address ?? "Address:"} ${order.deliveryAddress}', maxLines: 1, overflow: TextOverflow.ellipsis),
                             ],
                           ),
                           trailing: Column(
@@ -112,7 +115,7 @@ class _DeliveryHistoryViewState extends State<DeliveryHistoryView> {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Text(
-                                '\$${order.restaurant.deliveryFee.toStringAsFixed(2)}',
+                                 DataLocalizationHelper.formatCurrency(context, order.restaurant.deliveryFee),
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: isDelivered ? Colors.green : Colors.red,
@@ -121,7 +124,7 @@ class _DeliveryHistoryViewState extends State<DeliveryHistoryView> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                order.status.displayName,
+                                order.status.localize(context),
                                 style: TextStyle(
                                   color: isDelivered ? Colors.green : Colors.red,
                                   fontSize: 10,

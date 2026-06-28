@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/custom_toastr.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../di/injection_container.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -75,14 +77,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       const SizedBox(height: 32),
                       TextFormField(
                         controller: _emailController,
-                        decoration: const InputDecoration(
-                          hintText: 'Email',
-                          prefixIcon: Icon(Icons.email_outlined),
+                        decoration: InputDecoration(
+                          hintText: AppLocalizations.of(context)?.email ?? 'Email',
+                          prefixIcon: const Icon(Icons.email_outlined),
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your email';
-                          }
+                          if (value == null || value.isEmpty) return 'Enter your email';
+                          if (!value.contains('@')) return 'Enter a valid email';
                           return null;
                         },
                       ),

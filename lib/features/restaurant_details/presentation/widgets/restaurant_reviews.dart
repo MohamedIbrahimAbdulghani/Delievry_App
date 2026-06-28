@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/review_entity.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
 
 class RestaurantReviews extends StatelessWidget {
   final List<ReviewEntity> reviews;
@@ -10,7 +11,7 @@ class RestaurantReviews extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (reviews.isEmpty) {
-      return const Center(child: Text('No reviews yet.'));
+      return Center(child: Text(AppLocalizations.of(context)?.noReviewsYet ?? 'No reviews yet.', style: TextStyle(color: Theme.of(context).colorScheme.onSurface)));
     }
 
     return ListView.builder(
@@ -22,7 +23,7 @@ class RestaurantReviews extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.background,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -41,11 +42,11 @@ class RestaurantReviews extends StatelessWidget {
                       children: [
                         Text(
                           review.userName,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
                         ),
                         Text(
                           '${review.createdAt.day}/${review.createdAt.month}/${review.createdAt.year}',
-                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                         ),
                       ],
                     ),
@@ -54,7 +55,7 @@ class RestaurantReviews extends StatelessWidget {
                     children: List.generate(5, (i) => Icon(
                       Icons.star,
                       size: 16,
-                      color: i < review.rating ? Colors.amber : Colors.grey[300],
+                      color: i < review.rating ? Colors.amber : Theme.of(context).colorScheme.onSurface.withOpacity(0.2),
                     )),
                   ),
                 ],
@@ -62,7 +63,7 @@ class RestaurantReviews extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 review.comment,
-                style: const TextStyle(fontSize: 14, color: AppColors.onBackground),
+                style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurface),
               ),
             ],
           ),

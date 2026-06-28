@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/cart_item_entity.dart';
+import '../../../../core/utils/data_localization_helper.dart';
 
 class CartItemTile extends StatelessWidget {
   final CartItemEntity item;
@@ -20,11 +21,11 @@ class CartItemTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(13),
+            color: Theme.of(context).shadowColor.withAlpha(13),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -91,7 +92,7 @@ class CartItemTile extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '\$${item.product.price.toStringAsFixed(2)}',
+                      DataLocalizationHelper.formatCurrency(context, item.product.price),
                       style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     Row(
@@ -100,7 +101,7 @@ class CartItemTile extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: Text(
-                            item.quantity.toString(),
+                            DataLocalizationHelper.formatNumber(context, item.quantity),
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                           ),
                         ),

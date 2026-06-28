@@ -7,9 +7,15 @@ import '../../../../di/injection_container.dart';
 import '../../../home/presentation/bloc/home_bloc.dart';
 import '../../../cart/presentation/bloc/cart_bloc.dart';
 import '../../../favorites/presentation/bloc/favorites_bloc.dart';
+import '../../../home/presentation/bloc/home_event.dart';
+import '../../../cart/presentation/bloc/cart_event.dart';
+import '../../../favorites/presentation/bloc/favorites_event.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
 import '../bloc/profile_state.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../../core/settings/presentation/bloc/settings_cubit.dart';
+import '../../../../core/settings/presentation/bloc/settings_state.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -32,11 +38,10 @@ class _ProfilePageState extends State<ProfilePage> {
     return BlocProvider(
       create: (context) => _bloc,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: Colors.white,
           elevation: 0,
-          title: const Text('My Profile', style: TextStyle(color: AppColors.onBackground, fontWeight: FontWeight.bold)),
+          title: Text(AppLocalizations.of(context)!.profile, style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold)),
         ),
         body: BlocConsumer<ProfileBloc, ProfileState>(
           listener: (context, state) {
@@ -55,9 +60,9 @@ class _ProfilePageState extends State<ProfilePage> {
               return SingleChildScrollView(
                 child: Column(
                   children: [
-                    _buildUserHeader(state.user),
+                    _buildUserHeader(context, state.user),
                     const SizedBox(height: 24),
-                    _buildMenuSection(),
+                    _buildMenuSection(context),
                   ],
                 ),
               );
@@ -71,9 +76,9 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildUserHeader(dynamic user) {
+  Widget _buildUserHeader(BuildContext context, dynamic user) {
     return Container(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       padding: const EdgeInsets.all(24),
       child: Row(
         children: [
@@ -87,8 +92,8 @@ class _ProfilePageState extends State<ProfilePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(user.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                Text(user.email, style: const TextStyle(color: AppColors.textSecondary)),
+                Text(user.name, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface)),
+                Text(user.email, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))),
               ],
             ),
           ),
@@ -101,37 +106,73 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildMenuSection() {
+  Widget _buildMenuSection(BuildContext context) {
     return Container(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       child: Column(
         children: [
-          _buildMenuTile(Icons.location_on_outlined, 'Delivery Addresses', () => context.push('/addresses')),
-          _buildMenuTile(Icons.receipt_long_outlined, 'My Orders', () => context.push('/orders')),
-          _buildMenuTile(Icons.favorite_border_outlined, 'Favorites', () => context.push('/favorites')),
-          _buildMenuTile(Icons.payment_outlined, 'Payment Methods', () {}),
-          _buildMenuTile(Icons.notifications_none_outlined, 'Notifications', () => context.push('/notifications')),
-          _buildMenuTile(Icons.settings_outlined, 'Settings', () {}),
-          _buildMenuTile(Icons.help_outline, 'Help & Support', () {}),
+          _buildMenuTile(context, Icons.location_on_outlined, AppLocalizations.of(context)?.deliveryAddresses ?? 'Delivery Addresses', () => context.push('/addresses')),
+          _buildMenuTile(context, Icons.receipt_long_outlined, AppLocalizations.of(context)?.myOrders ?? 'My Orders', () => context.push('/orders')),
+          _buildMenuTile(context, Icons.favorite_border_outlined, AppLocalizations.of(context)?.favorites ?? 'Favorites', () => context.push('/favorites')),
+          _buildMenuTile(context, Icons.payment_outlined, AppLocalizations.of(context)?.paymentMethods ?? 'Payment Methods', () {}),
+          _buildMenuTile(context, Icons.notifications_none_outlined, AppLocalizations.of(context)?.notifications ?? 'Notifications', () => context.push('/notifications')),
           const Divider(height: 1),
-          _buildMenuTile(Icons.logout, 'Logout', () => _bloc.add(LogoutEvent()), isDestructive: true),
+          BlocBuilder<SettingsCubit, SettingsState>(
+            builder: (context, state) {
+              return ListTile(
+                leading: Icon(Icons.language, color: Theme.of(context).colorScheme.onSurface),
+                title: Text(AppLocalizations.of(context)!.language, style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                subtitle: Text(
+                  state.locale.languageCode == 'ar' ? 'العربية' : 'English',
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 12),
+                ),
+                trailing: Switch(
+                  value: state.locale.languageCode == 'ar',
+                  activeColor: AppColors.primary,
+                  onChanged: (value) {
+                    context.read<SettingsCubit>().toggleLocale();
+                    sl<HomeBloc>().add(FetchHomeData());
+                    sl<FavoritesBloc>().add(FetchFavorites());
+                    sl<CartBloc>().add(FetchCart());
+                  },
+                ),
+              );
+            },
+          ),
+          BlocBuilder<SettingsCubit, SettingsState>(
+            builder: (context, state) {
+              return ListTile(
+                leading: Icon(Icons.dark_mode_outlined, color: Theme.of(context).colorScheme.onSurface),
+                title: Text(AppLocalizations.of(context)!.darkMode, style: TextStyle(color: Theme.of(context).colorScheme.onSurface)),
+                trailing: Switch(
+                  value: state.themeMode == ThemeMode.dark,
+                  activeColor: AppColors.primary,
+                  onChanged: (value) {
+                    context.read<SettingsCubit>().toggleTheme();
+                  },
+                ),
+              );
+            },
+          ),
+          const Divider(height: 1),
+          _buildMenuTile(context, Icons.logout, AppLocalizations.of(context)?.logout ?? 'Logout', () => _bloc.add(LogoutEvent()), isDestructive: true),
         ],
       ),
     );
   }
 
-  Widget _buildMenuTile(IconData icon, String title, VoidCallback onTap, {bool isDestructive = false}) {
+  Widget _buildMenuTile(BuildContext context, IconData icon, String title, VoidCallback onTap, {bool isDestructive = false}) {
     return ListTile(
       onTap: onTap,
-      leading: Icon(icon, color: isDestructive ? AppColors.error : AppColors.onBackground),
+      leading: Icon(icon, color: isDestructive ? AppColors.error : Theme.of(context).colorScheme.onSurface),
       title: Text(
         title,
         style: TextStyle(
-          color: isDestructive ? AppColors.error : AppColors.onBackground,
+          color: isDestructive ? AppColors.error : Theme.of(context).colorScheme.onSurface,
           fontWeight: FontWeight.w500,
         ),
       ),
-      trailing: const Icon(Icons.chevron_right, size: 20),
+      trailing: Icon(Icons.chevron_right, size: 20, color: Theme.of(context).colorScheme.onSurface),
     );
   }
 }

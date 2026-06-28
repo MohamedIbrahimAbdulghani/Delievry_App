@@ -5,9 +5,13 @@ namespace App\Modules\Products\Models;
 use App\Modules\Restaurants\Models\Restaurant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Translatable\HasTranslations;
 
 class Product extends Model
 {
+    use HasTranslations;
+
+    public $translatable = ['name', 'description', 'category'];
     protected $fillable = [
         'restaurant_id',
         'name',

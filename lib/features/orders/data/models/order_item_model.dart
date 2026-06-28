@@ -5,6 +5,8 @@ class OrderItemModel extends OrderItemEntity {
     required super.id,
     required super.productId,
     required super.productName,
+    super.productNameAr,
+    super.productNameEn,
     required super.quantity,
     required super.unitPrice,
     super.options,
@@ -15,6 +17,8 @@ class OrderItemModel extends OrderItemEntity {
       id: json['id'],
       productId: json['product_id'] ?? 0,
       productName: json['product_name'] ?? '',
+      productNameAr: json['product_name_ar'],
+      productNameEn: json['product_name_en'],
       quantity: json['quantity'],
       unitPrice: double.parse((json['unit_price'] ?? '0').toString()),
       options: json['options'] != null

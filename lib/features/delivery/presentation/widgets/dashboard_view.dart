@@ -3,6 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
+import '../../../../core/utils/order_status_l10n.dart';
+import '../../../../core/utils/data_localization_helper.dart';
 import '../../../orders/domain/entities/order_entity.dart';
 import '../bloc/delivery_bloc.dart';
 import '../bloc/delivery_event.dart';
@@ -40,7 +43,7 @@ class DashboardView extends StatelessWidget {
           const SizedBox(height: 20),
 
           // Statistics Grid
-          _buildStatsGrid(earnings),
+          _buildStatsGrid(context, earnings),
           const SizedBox(height: 24),
 
           // Active Order Section
@@ -74,10 +77,10 @@ class DashboardView extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 2)),
+        boxShadow: [
+          BoxShadow(color: Theme.of(context).shadowColor.withAlpha(20), blurRadius: 8, offset: const Offset(0, 2)),
         ],
       ),
       child: Row(
@@ -123,8 +126,8 @@ class DashboardView extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsGrid(Map<String, dynamic> earnings) {
-    final todayEarnings = earnings['today_earnings'] ?? 0.0;
+  Widget _buildStatsGrid(BuildContext context, Map<String, dynamic> earnings) {
+    final todayEarnings = (earnings['today_earnings'] as num? ?? 0.0).toDouble();
     final todayCount = earnings['today_deliveries'] ?? 0;
     final totalCount = earnings['total_deliveries'] ?? 0;
 
@@ -137,20 +140,23 @@ class DashboardView extends StatelessWidget {
       childAspectRatio: 1.1,
       children: [
         _buildStatItem(
+          context,
           'Today\'s Pay',
-          '\$${todayEarnings.toStringAsFixed(2)}',
+          DataLocalizationHelper.formatCurrency(context, todayEarnings),
           Icons.monetization_on_rounded,
           const Color(0xFF43A047),
         ),
         _buildStatItem(
+          context,
           'Today\'s Trips',
-          '$todayCount',
+          DataLocalizationHelper.formatNumber(context, todayCount),
           Icons.local_shipping_rounded,
           const Color(0xFF1E88E5),
         ),
         _buildStatItem(
+          context,
           'Total Trips',
-          '$totalCount',
+          DataLocalizationHelper.formatNumber(context, totalCount),
           Icons.history_rounded,
           const Color(0xFF8E24AA),
         ),
@@ -158,14 +164,14 @@ class DashboardView extends StatelessWidget {
     );
   }
 
-  Widget _buildStatItem(String title, String value, IconData icon, Color color) {
+  Widget _buildStatItem(BuildContext context, String title, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 1)),
+        boxShadow: [
+          BoxShadow(color: Theme.of(context).shadowColor.withAlpha(20), blurRadius: 6, offset: const Offset(0, 1)),
         ],
       ),
       child: Column(
@@ -209,7 +215,7 @@ class DashboardView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    order.status.displayName,
+                    order.status.localize(context),
                     style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                 ),
@@ -242,7 +248,7 @@ class DashboardView extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton.icon(
                     icon: const Icon(Icons.map_rounded, color: Colors.white),
-                    label: const Text('Navigate', style: TextStyle(color: Colors.white)),
+                    label: Text(AppLocalizations.of(context)?.navigate ?? 'Navigate', style: const TextStyle(color: Colors.white)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -258,7 +264,7 @@ class DashboardView extends StatelessWidget {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     onPressed: () => _showStatusTransitionDialog(context, order),
-                    child: const Text('Update Status', style: TextStyle(color: AppColors.primary)),
+                    child: Text(AppLocalizations.of(context)?.updateStatus ?? 'Update Status', style: const TextStyle(color: AppColors.primary)),
                   ),
                 ),
               ],
@@ -344,7 +350,7 @@ class DashboardView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '\$${order.restaurant.deliveryFee.toStringAsFixed(2)}',
+                    DataLocalizationHelper.formatCurrency(context, order.restaurant.deliveryFee),
                     style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16),
                   ),
                   const SizedBox(height: 4),
@@ -419,7 +425,7 @@ class DashboardView extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      order.status.displayName,
+                      order.status.localize(context),
                       style: TextStyle(color: Colors.amber.shade900, fontWeight: FontWeight.bold, fontSize: 12),
                     ),
                   ),
@@ -437,7 +443,7 @@ class DashboardView extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '\$${order.restaurant.deliveryFee.toStringAsFixed(2)}',
+                      DataLocalizationHelper.formatCurrency(context, order.restaurant.deliveryFee),
                       style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.green),
                     ),
                   ],
@@ -525,9 +531,9 @@ class DashboardView extends StatelessWidget {
                 Container(
                   constraints: const BoxConstraints(maxHeight: 120),
                   decoration: BoxDecoration(
-                    color: Colors.grey[50],
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[200]!),
+                    border: Border.all(color: Theme.of(context).dividerColor),
                   ),
                   child: ListView.builder(
                     shrinkWrap: true,
@@ -559,9 +565,9 @@ class DashboardView extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
+                    color: Colors.red.withAlpha(26),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.red.shade100),
+                    border: Border.all(color: Colors.red.withAlpha(51)),
                   ),
                   child: Row(
                     children: [
@@ -570,7 +576,7 @@ class DashboardView extends StatelessWidget {
                       Expanded(
                         child: Text(
                           'Note: ${order.notes}',
-                          style: TextStyle(color: Colors.red.shade800, fontSize: 13),
+                          style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.red[200] : Colors.red[800], fontSize: 13),
                         ),
                       ),
                     ],
@@ -596,7 +602,7 @@ class DashboardView extends StatelessWidget {
                           UpdateDeliveryStatus(orderId: order.id, status: 'preparing'),
                         );
                       },
-                      child: const Text('Decline', style: TextStyle(fontWeight: FontWeight.bold)),
+                      child: Text(AppLocalizations.of(context)?.cancel ?? 'Decline', style: const TextStyle(fontWeight: FontWeight.bold)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -615,7 +621,7 @@ class DashboardView extends StatelessWidget {
                           AcceptDeliveryEvent(orderId: order.id),
                         );
                       },
-                      child: const Text('Accept Order', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      child: Text(AppLocalizations.of(context)?.acceptDelivery ?? 'Accept Order', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     ),
                   ),
                 ],
@@ -710,7 +716,7 @@ class DashboardView extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Close'),
+              child: Text(AppLocalizations.of(context)?.close ?? 'Close'),
             ),
           ],
         );

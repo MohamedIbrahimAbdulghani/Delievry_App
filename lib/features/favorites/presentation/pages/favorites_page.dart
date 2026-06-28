@@ -7,6 +7,8 @@ import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../bloc/favorites_bloc.dart';
 import '../bloc/favorites_event.dart';
 import '../bloc/favorites_state.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
+import '../../../../core/utils/data_localization_helper.dart';
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});
@@ -25,22 +27,22 @@ class _FavoritesPageState extends State<FavoritesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
-          'My Favorites',
+          AppLocalizations.of(context)?.favorites ?? 'My Favorites',
           style: Theme.of(context).textTheme.displayMedium?.copyWith(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: AppColors.onBackground,
-          ) ?? const TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+          ) ?? TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: AppColors.onBackground,
+            color: Theme.of(context).colorScheme.onSurface,
             fontFamily: 'Plus Jakarta Sans',
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
       ),
       body: BlocBuilder<FavoritesBloc, FavoritesState>(
@@ -70,7 +72,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                       margin: const EdgeInsets.only(bottom: 16),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
@@ -108,10 +110,10 @@ class _FavoritesPageState extends State<FavoritesPage> {
                               children: [
                                 Text(
                                   restaurant.name,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.onBackground,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                     fontFamily: 'Plus Jakarta Sans',
                                   ),
                                   maxLines: 1,
@@ -124,9 +126,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
                                     const SizedBox(width: 4),
                                     Text(
                                       restaurant.city,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 12,
-                                        color: AppColors.textSecondary,
+                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                       ),
                                     ),
                                   ],
@@ -140,8 +142,10 @@ class _FavoritesPageState extends State<FavoritesPage> {
                                   ),
                                   child: Text(
                                     restaurant.deliveryFee == 0 
-                                        ? "Free Delivery" 
-                                        : "\$${restaurant.deliveryFee.toStringAsFixed(2)} Delivery",
+                                        ? (Localizations.localeOf(context).languageCode == 'ar' ? 'توصيل مجاني' : 'Free Delivery') 
+                                        : (Localizations.localeOf(context).languageCode == 'ar' 
+                                            ? '${DataLocalizationHelper.formatCurrency(context, restaurant.deliveryFee)} توصيل'
+                                            : '${DataLocalizationHelper.formatCurrency(context, restaurant.deliveryFee)} Delivery'),
                                     style: const TextStyle(
                                       fontSize: 11,
                                       color: AppColors.primary,
@@ -210,7 +214,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
@@ -228,25 +232,25 @@ class _FavoritesPageState extends State<FavoritesPage> {
             ),
             const SizedBox(height: 24),
             Text(
-              'No Favorites Yet',
+              AppLocalizations.of(context)?.noFavoritesYet ?? 'No Favorites Yet',
               style: Theme.of(context).textTheme.displayMedium?.copyWith(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: AppColors.onBackground,
-              ) ?? const TextStyle(
+                color: Theme.of(context).colorScheme.onSurface,
+              ) ?? TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: AppColors.onBackground,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontFamily: 'Plus Jakarta Sans',
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Tap the heart icon on any restaurant card to save them here.',
+            Text(
+              AppLocalizations.of(context)?.addFavoritesMsg ?? 'Tap the heart icon on any restaurant card to save them here.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 height: 1.5,
               ),
             ),
@@ -263,9 +267,9 @@ class _FavoritesPageState extends State<FavoritesPage> {
                 elevation: 0,
                 minimumSize: const Size(180, 48),
               ),
-              child: const Text(
-                'Explore Restaurants',
-                style: TextStyle(
+              child: Text(
+                AppLocalizations.of(context)?.exploreRestaurants ?? 'Explore Restaurants',
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),

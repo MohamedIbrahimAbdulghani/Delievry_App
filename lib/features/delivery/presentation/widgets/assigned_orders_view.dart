@@ -6,6 +6,9 @@ import '../../../orders/domain/entities/order_entity.dart';
 import '../bloc/delivery_bloc.dart';
 import '../bloc/delivery_event.dart';
 import '../bloc/delivery_state.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
+import '../../../../core/utils/order_status_l10n.dart';
+import '../../../../core/utils/data_localization_helper.dart';
 
 class AssignedOrdersView extends StatefulWidget {
   final DeliveryLoaded state;
@@ -55,7 +58,7 @@ class _AssignedOrdersViewState extends State<AssignedOrdersView> {
           const SizedBox(height: 12),
           TextField(
             decoration: InputDecoration(
-              hintText: 'Search by ID, restaurant, address...',
+              hintText: AppLocalizations.of(context)?.searchOrders ?? 'Search by ID, restaurant, address...',
               prefixIcon: const Icon(Icons.search),
               filled: true,
               fillColor: Colors.white,
@@ -96,10 +99,10 @@ class _AssignedOrdersViewState extends State<AssignedOrdersView> {
                         margin: const EdgeInsets.only(bottom: 12),
                         child: ListTile(
                           title: Text(
-                            'Order #${order.id} - ${order.restaurant.name}',
+                            '${AppLocalizations.of(context)?.orderLabel ?? "Order"} #${DataLocalizationHelper.formatNumber(context, order.id)} - ${order.restaurant.name}',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          subtitle: Text('Status: ${order.status.displayName} | Fee: \$${order.restaurant.deliveryFee.toStringAsFixed(2)}'),
+                          subtitle: Text('${AppLocalizations.of(context)?.statusLabel ?? "Status"}: ${order.status.localize(context)} | ${AppLocalizations.of(context)?.deliveryFee ?? "Fee:"} ${DataLocalizationHelper.formatCurrency(context, order.restaurant.deliveryFee)}'),
                           trailing: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
@@ -107,7 +110,7 @@ class _AssignedOrdersViewState extends State<AssignedOrdersView> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              order.status.displayName,
+                              order.status.localize(context),
                               style: TextStyle(color: _getStatusColor(order.status), fontWeight: FontWeight.bold, fontSize: 11),
                             ),
                           ),
@@ -213,11 +216,11 @@ class _AssignedOrdersViewState extends State<AssignedOrdersView> {
                   const Divider(height: 24),
 
                   // Restaurant Info
-                  const Text('Restaurant Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text(AppLocalizations.of(context)?.restaurantDetails ?? 'Restaurant Details', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 8),
-                  Text('Name: ${order.restaurant.name}', style: const TextStyle(fontWeight: FontWeight.w600)),
-                  Text('Phone: ${order.restaurant.phone}'),
-                  Text('Address: ${order.restaurant.address}'),
+                  Text('${AppLocalizations.of(context)?.name ?? "Name"}: ${order.restaurant.name}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                  Text('${AppLocalizations.of(context)?.phoneNumber ?? "Phone"}: ${order.restaurant.phone}'),
+                  Text('${AppLocalizations.of(context)?.address ?? "Address"}: ${order.restaurant.address}'),
                   const Divider(height: 24),
 
                   // Customer Info & Delivery Location
@@ -226,7 +229,7 @@ class _AssignedOrdersViewState extends State<AssignedOrdersView> {
                   Text('Address: ${order.deliveryAddress}'),
                   if (order.notes != null && order.notes!.isNotEmpty) ...[
                     const SizedBox(height: 8),
-                    Text('Delivery Notes: ${order.notes}', style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.redAccent)),
+                    Text('${AppLocalizations.of(context)?.notes ?? "Delivery Notes"}: ${order.notes}', style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.redAccent)),
                   ],
                   const Divider(height: 24),
 
@@ -238,8 +241,8 @@ class _AssignedOrdersViewState extends State<AssignedOrdersView> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('${item.productName} (x${item.quantity})'),
-                            Text('\$${(item.unitPrice * item.quantity).toStringAsFixed(2)}'),
+                            Text('${item.productName} (x${DataLocalizationHelper.formatNumber(context, item.quantity)})'),
+                            Text(DataLocalizationHelper.formatCurrency(context, item.unitPrice * item.quantity)),
                           ],
                         ),
                       )),
@@ -267,7 +270,7 @@ class _AssignedOrdersViewState extends State<AssignedOrdersView> {
                             );
                           }
                         },
-                        child: const Text('Accept Delivery', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        child: Text(AppLocalizations.of(context)?.acceptDelivery ?? 'Accept Delivery', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ] else ...[
@@ -276,7 +279,7 @@ class _AssignedOrdersViewState extends State<AssignedOrdersView> {
                         Expanded(
                           child: ElevatedButton.icon(
                             icon: const Icon(Icons.map_rounded, color: Colors.white),
-                            label: const Text('Track / Navigate', style: TextStyle(color: Colors.white)),
+                            label: Text(AppLocalizations.of(context)?.trackNavigate ?? 'Track / Navigate', style: const TextStyle(color: Colors.white)),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
                               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -300,7 +303,7 @@ class _AssignedOrdersViewState extends State<AssignedOrdersView> {
                               Navigator.pop(ctx);
                               _showStatusTransitionDialog(context, order);
                             },
-                            child: const Text('Update Status', style: TextStyle(color: AppColors.primary)),
+                            child: Text(AppLocalizations.of(context)?.updateStatus ?? 'Update Status', style: const TextStyle(color: AppColors.primary)),
                           ),
                         ),
                       ],
@@ -354,7 +357,7 @@ class _AssignedOrdersViewState extends State<AssignedOrdersView> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Close'),
+              child: Text(AppLocalizations.of(context)?.close ?? 'Close'),
             ),
           ],
         );

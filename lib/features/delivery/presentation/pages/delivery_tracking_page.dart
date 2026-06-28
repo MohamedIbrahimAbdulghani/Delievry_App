@@ -12,6 +12,7 @@ import '../../../orders/domain/entities/order_entity.dart';
 import '../bloc/delivery_bloc.dart';
 import '../bloc/delivery_event.dart';
 import '../bloc/delivery_state.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
 
 class DeliveryTrackingPage extends StatefulWidget {
   final int orderId;
@@ -275,7 +276,7 @@ class _DeliveryTrackingPageState extends State<DeliveryTrackingPage> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     onPressed: () => _showStatusTransitionDialog(context, order),
-                    child: const Text('Update Status', style: TextStyle(color: AppColors.primary)),
+                    child: Text(AppLocalizations.of(context)?.updateStatus ?? 'Update Status', style: const TextStyle(color: AppColors.primary)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -302,34 +303,35 @@ class _DeliveryTrackingPageState extends State<DeliveryTrackingPage> {
   void _showStatusTransitionDialog(BuildContext context, OrderEntity order) {
     final List<Widget> tiles = [];
     final status = order.status;
+    final l = AppLocalizations.of(context);
 
     if (status == OrderStatus.preparing) {
-      tiles.add(_buildTransitionTile(context, 'Heading to Restaurant', 'heading_to_restaurant', order));
+      tiles.add(_buildTransitionTile(context, l?.statusHeadingToRestaurant ?? 'Heading to Restaurant', 'heading_to_restaurant', order));
     } else if (status == OrderStatus.heading_to_restaurant) {
-      tiles.add(_buildTransitionTile(context, 'Food Picked Up', 'picked_up', order));
-      tiles.add(_buildTransitionTile(context, 'Reject Assignment', 'preparing', order));
+      tiles.add(_buildTransitionTile(context, l?.statusPickedUp ?? 'Food Picked Up', 'picked_up', order));
+      tiles.add(_buildTransitionTile(context, l?.rejectBtn ?? 'Reject Assignment', 'preparing', order));
     } else if (status == OrderStatus.picked_up) {
-      tiles.add(_buildTransitionTile(context, 'Out for Delivery', 'out_for_delivery', order));
-      tiles.add(_buildTransitionTile(context, 'Failed Delivery', 'failed', order));
+      tiles.add(_buildTransitionTile(context, l?.statusOutForDelivery ?? 'Out for Delivery', 'out_for_delivery', order));
+      tiles.add(_buildTransitionTile(context, l?.markFailed ?? 'Failed Delivery', 'failed', order));
     } else if (status == OrderStatus.out_for_delivery) {
-      tiles.add(_buildTransitionTile(context, 'Mark as Delivered', 'delivered', order));
-      tiles.add(_buildTransitionTile(context, 'Failed Delivery', 'failed', order));
+      tiles.add(_buildTransitionTile(context, l?.markDelivered ?? 'Mark as Delivered', 'delivered', order));
+      tiles.add(_buildTransitionTile(context, l?.markFailed ?? 'Failed Delivery', 'failed', order));
     }
 
     // Always allow cancellation if not completed
     if (status != OrderStatus.delivered && status != OrderStatus.failed && status != OrderStatus.cancelled) {
-      tiles.add(_buildTransitionTile(context, 'Cancel Order', 'cancelled', order));
+      tiles.add(_buildTransitionTile(context, l?.statusCancelled ?? 'Cancel Order', 'cancelled', order));
     }
 
     showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          title: Text('Transition Status for #${order.id}'),
+          title: Text('${l?.updateStatus ?? 'Transition Status'} for #${order.id}'),
           content: tiles.isEmpty
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8.0),
-                  child: Text('No further transitions possible for this order.'),
+               ? Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Text(l?.noMatchingOrders ?? 'No further transitions possible for this order.'),
                 )
               : Column(
                   mainAxisSize: MainAxisSize.min,
@@ -338,7 +340,7 @@ class _DeliveryTrackingPageState extends State<DeliveryTrackingPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Close'),
+              child: Text(l?.close ?? 'Close'),
             ),
           ],
         );

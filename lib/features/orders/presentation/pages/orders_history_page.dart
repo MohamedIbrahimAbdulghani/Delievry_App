@@ -14,6 +14,8 @@ import '../bloc/orders_event.dart';
 import '../bloc/orders_state.dart';
 import '../../domain/entities/order_entity.dart';
 import '../widgets/order_status_badge.dart';
+import 'package:delievry_app/l10n/app_localizations.dart';
+import '../../../../core/utils/data_localization_helper.dart';
 
 class OrdersHistoryPage extends StatefulWidget {
   const OrdersHistoryPage({super.key});
@@ -49,19 +51,19 @@ class _OrdersHistoryPageState extends State<OrdersHistoryPage> with SingleTicker
     return BlocProvider(
       create: (context) => _bloc,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 0,
-          title: const Text('My Orders', style: TextStyle(color: AppColors.onBackground, fontWeight: FontWeight.bold)),
+          title: Text(AppLocalizations.of(context)?.myOrders ?? 'My Orders', style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.bold)),
           bottom: TabBar(
             controller: _tabController,
             indicatorColor: AppColors.primary,
             labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.textSecondary,
-            tabs: const [
-              Tab(text: 'Active Orders'),
-              Tab(text: 'Past Orders'),
+            unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            tabs: [
+              Tab(text: AppLocalizations.of(context)?.activeOrders ?? 'Active Orders'),
+              Tab(text: AppLocalizations.of(context)?.pastOrders ?? 'Past Orders'),
             ],
           ),
         ),
@@ -109,7 +111,7 @@ class _OrdersHistoryPageState extends State<OrdersHistoryPage> with SingleTicker
           children: [
             Icon(Icons.receipt_long_outlined, size: 80, color: Colors.grey[300]),
             const SizedBox(height: 16),
-            const Text('No orders found', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+            Text(AppLocalizations.of(context)?.noOrdersFound ?? 'No orders found', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Theme.of(context).colorScheme.onSurface)),
           ],
         ),
       );
@@ -125,7 +127,7 @@ class _OrdersHistoryPageState extends State<OrdersHistoryPage> with SingleTicker
           child: Container(
             margin: const EdgeInsets.only(bottom: 16),
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface, borderRadius: BorderRadius.circular(12)),
             child: Column(
               children: [
                 Row(
@@ -145,8 +147,8 @@ class _OrdersHistoryPageState extends State<OrdersHistoryPage> with SingleTicker
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(order.restaurant.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                          Text('${order.items.length} items • \$${order.totalAmount.toStringAsFixed(2)}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                          Text(order.restaurant.name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Theme.of(context).colorScheme.onSurface)),
+                          Text('${DataLocalizationHelper.formatNumber(context, order.items.length)} ${AppLocalizations.of(context)?.items ?? 'items'} • ${DataLocalizationHelper.formatCurrency(context, order.totalAmount)}', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 13)),
                         ],
                       ),
                     ),
@@ -157,15 +159,15 @@ class _OrdersHistoryPageState extends State<OrdersHistoryPage> with SingleTicker
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('${order.createdAt.day}/${order.createdAt.month}/${order.createdAt.year}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                    Text('${DataLocalizationHelper.formatNumber(context, order.createdAt.day)}/${DataLocalizationHelper.formatNumber(context, order.createdAt.month)}/${DataLocalizationHelper.formatNumber(context, order.createdAt.year)}', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), fontSize: 12)),
                     Row(
                       children: [
                         TextButton(
                           onPressed: () => _bloc.add(ReorderEvent(order.id)),
-                          child: const Text('Reorder', style: TextStyle(color: AppColors.primary)),
+                          child: Text(AppLocalizations.of(context)?.placeOrder ?? 'Reorder', style: const TextStyle(color: AppColors.primary)),
                         ),
                         const SizedBox(width: 8),
-                        OutlinedButton(onPressed: () => context.push('/order-details/${order.id}'), child: const Text('Details')),
+                        OutlinedButton(onPressed: () => context.push('/order-details/${order.id}'), child: Text(AppLocalizations.of(context)?.orderDetails ?? 'Details')),
                       ],
                     ),
                   ],
